@@ -2,7 +2,6 @@
 
 namespace Kmergen\MediaBundle\Controller;
 
-use AllowDynamicProperties;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Kmergen\MediaBundle\Entity\Media;
@@ -18,10 +17,11 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[AllowDynamicProperties]
 class MediaController extends AbstractController
 {
-  public function __construct(private readonly KernelInterface $kernel, private ParameterBagInterface $params)
+  private string $publicDir;
+
+  public function __construct(private readonly KernelInterface $kernel, private readonly ParameterBagInterface $params)
   {
     $this->publicDir = $kernel->getProjectDir() . '/public';
   }

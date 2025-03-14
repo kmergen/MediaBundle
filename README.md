@@ -5,19 +5,21 @@ This bundle is compatible with Symfony versions equal or greater Symfony 7.2.
 
 It currently handles:
 
-  - Hold all media files as Entities
-  - Image Upload
-  - Image Editing
-  - Image Deletion
-
+- Hold all media files as Entities
+- Image Upload
+- Image Editing
+- Image Deletion
 
 ## Install
+
+MediaBundle requires php 8.2 or higher and Symfony 7 or higher. Run the following command to install it in your
+application.
 
 ```bash
 composer require kmergen/media-bundle
 ```
 
-## Usage
+## Documentation
 
-All you have to do is to use the services of the Bundle.
+Read the [MediaBundle Docs](./docs/index.rst).
 
