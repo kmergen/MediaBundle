@@ -1,0 +1,28 @@
+# src/MediaBundle/Resources/config/services.yaml
+services:
+  # Default configuration for services in this file
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  # Load services from the Kmergen\MediaBundle namespace
+  Kmergen\MediaBundle\:
+    resource: '../src/*'
+
+    exclude:
+      - '../src/Entity/'
+      - '../src/Tests/'
+      - '../src/config/'
+
+
+  # Explicitly define the ImageUploadService with arguments
+  # Explicitly define the ImageUploadService with a custom service ID
+  media.image_upload_service:
+    class: Kmergen\MediaBundle\Service\ImageUploadService
+
+#
+#
+#  # Explicitly define the ImageService with arguments
+#  Kmergen\MediaBundle\Service\ImageService:
+#    arguments:
+#      $filesystem: '@Symfony\Component\Filesystem\Filesystem'

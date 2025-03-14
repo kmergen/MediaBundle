@@ -1,0 +1,32 @@
+{% block main %}
+  <!-- Dropzone instance 1 -->
+  <div class="dropzone-wrapper"
+       data-entity-id="{{ entityId }}"
+       data-entity-name="{{ entityName }}"
+       data-upload-url="{{ uploadUrl| default(path('kmergen_media_upload')) }}"
+       data-image-list-url="{{ imageListUrl| default( path('kmergen_media_image_list')) }}"
+       data-target-dir="{{ targetDir }}"
+      {% if tempKey is defined and tempKey is not empty %}
+        data-temp-key="{{ tempKey }}"
+      {% endif %}
+       data-image-variants="{{ imageVariants|json_encode }}">
+
+    <div class="image-list flex gap-4 flex-wrap w-auto"
+         data-sortable-update-url="{{ path('kmergen_media_position_update') }}">
+      <!-- Image list will be inserted here -->
+
+      <!-- Spinner -->
+      <div class="upload-spinner w-[140px] h-[140px] flex items-center justify-center hidden" role="status">
+        {{ ux_icon('gg:spinner', {class: 'w-6 h-6 animate-spin'}) }}
+        <span class="sr-only">Loading...</span>
+      </div>
+
+      <!-- Dropzone trigger -->
+      <div
+          class="dropzone-container flex items-center justify-center w-[140px] h-[140px] border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-100">
+        <span class="text-4xl text-gray-400">+</span>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

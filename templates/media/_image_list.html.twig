@@ -1,0 +1,10 @@
+{% for key, image in images %}
+  <div
+      class="relative photo-item item overflow-hidden rounded-lg border border-gray-200"
+      data-media-id="{{ image.id }}" {% if image.entityName is not null %} data-entity-name="{{ image.entityName }}" {% endif %}
+  >
+    <img src="{{ asset(image.previewUrl) }}" alt="{{ image.name }}">
+    <div class="absolute w-[140px] text-xs overflow-hidden">{{ image.name }}</div>
+  </div>
+{% endfor %}
+

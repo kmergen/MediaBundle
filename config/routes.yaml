@@ -1,0 +1,14 @@
+# config/routes.yaml
+#kmergen_media_image_list:
+#  path: /media/image-list
+#  methods: [POST]
+#  controller: Kmergen\MediaBundle\Controller\MediaController::imageList
+#
+#kmergen_media_upload:
+#    path: /media/upload
+#    methods: [POST]
+#    controller: Kmergen\MediaBundle\Controller\MediaController::upload
+
+kmergen_media_bundle:
+  resource: ../src/Controller/
+  type: attribute
