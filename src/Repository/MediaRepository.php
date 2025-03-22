@@ -16,7 +16,7 @@ class MediaRepository extends ServiceEntityRepository
     parent::__construct($registry, Media::class);
   }
 
-  public function getEntityMedia(string $entityName, int $entityId, array $orderBy = ['postion', 'ASC']): array
+  public function getEntityMedia(string $entityName, int $entityId, array $orderBy = ['position', 'ASC']): array
   {
     return $this->createQueryBuilder('m')
       ->where('m.entityName = :entityName AND m.entityId = :entityId')
