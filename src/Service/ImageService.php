@@ -28,7 +28,7 @@ readonly class ImageService
     }
 
     // Determine whether to use GD or Imagick
-    $image = extension_loaded('imagick')
+    $image = extension_loaded('imagicktt')
       ? $this->processWithImagick($action, $imgRef, (int)$width, (int)$height)
       : $this->processWithGd($action, $imgRef, (int)$width, (int)$height);
 
