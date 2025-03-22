@@ -17,7 +17,6 @@ class ImageVariantGd
     string $imgRef,
     int $width,
     int $height,
-    int $quality,
     string $mode = 'inbound'
   ): ImageInterface {
     if (self::$imagine === null) {
@@ -38,7 +37,7 @@ class ImageVariantGd
     return $image;
   }
 
-  public static function crop(string $imgRef, int $width, int $height, int $quality): ImageInterface
+  public static function crop(string $imgRef, int $width, int $height): ImageInterface
   {
     if (self::$imagine === null) {
       self::$imagine = new Imagine();
@@ -55,9 +54,8 @@ class ImageVariantGd
     string $imgRef,
     int $width,
     int $height,
-    int $quality
   ): \Imagine\Effects\EffectsInterface {
-    $image = self::resize($imgRef, $width, $height, $quality);
+    $image = self::resize($imgRef, $width, $height);
     return $image->effects()->blur(5);
   }
 }

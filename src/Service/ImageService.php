@@ -29,29 +29,29 @@ readonly class ImageService
 
     // Determine whether to use GD or Imagick
     $image = extension_loaded('imagick')
-      ? $this->processWithImagick($action, $imgRef, (int)$width, (int)$height, (int)$quality)
-      : $this->processWithGd($action, $imgRef, (int)$width, (int)$height, (int)$quality * 10); // Adjust quality for GD
+      ? $this->processWithImagick($action, $imgRef, (int)$width, (int)$height)
+      : $this->processWithGd($action, $imgRef, (int)$width, (int)$height);
 
     // Save the image
-    return $this->saveImage($image, $variantPath, (int)$quality * 10); // Adjust quality for GD
+    return $this->saveImage($image, $variantPath, (int)$quality);
   }
 
-  private function processWithImagick(string $action, string $imgRef, int $width, int $height, int $quality): Imagick
+  private function processWithImagick(string $action, string $imgRef, int $width, int $height): Imagick
   {
     return match ($action) {
-      'resize' => ImageVariantImagick::resize($imgRef, $width, $height, $quality),
-      'crop' => ImageVariantImagick::crop($imgRef, $width, $height, $quality),
-      'compositeBlur' => ImageVariantImagick::compositeBlur($imgRef, $width, $height, $quality),
+      'resize' => ImageVariantImagick::resize($imgRef, $width, $height),
+      'crop' => ImageVariantImagick::crop($imgRef, $width, $height),
+      'compositeBlur' => ImageVariantImagick::compositeBlur($imgRef, $width, $height),
       default => throw new \InvalidArgumentException("Unknown variant action: $action"),
     };
   }
 
-  private function processWithGd(string $action, string $imgRef, int $width, int $height, int $quality): ImageInterface
+  private function processWithGd(string $action, string $imgRef, int $width, int $height): ImageInterface
   {
     return match ($action) {
-      'resize' => ImageVariantGd::resize($imgRef, $width, $height, $quality),
-      'crop' => ImageVariantGd::crop($imgRef, $width, $height, $quality),
-      'compositeBlur' => ImageVariantGd::compositeBlur($imgRef, $width, $height, $quality),
+      'resize' => ImageVariantGd::resize($imgRef, $width, $height),
+      'crop' => ImageVariantGd::crop($imgRef, $width, $height),
+      'compositeBlur' => ImageVariantGd::compositeBlur($imgRef, $width, $height),
       default => throw new \InvalidArgumentException("Unknown variant action: $action"),
     };
   }
@@ -61,7 +61,7 @@ readonly class ImageService
     $this->filesystem->mkdir(dirname($path));
 
     if ($image instanceof ImageInterface) {
-      $image->save($path, ['quality' => $quality]);
+      $image->save($path, ['quality' => $quality * 10]);
     } elseif ($image instanceof Imagick) {
       $image->setImageCompressionQuality($quality);
       $image->writeImage($path);
