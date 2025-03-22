@@ -19,7 +19,7 @@ class MediaRepository extends ServiceEntityRepository
   public function getEntityMedia(string $entityName, int $entityId, array $orderBy = ['postion', 'ASC']): array
   {
     return $this->createQueryBuilder('m')
-      ->where('r.entityName = :entityName AND r.entityId = :entityId')
+      ->where('m.entityName = :entityName AND m.entityId = :entityId')
       ->setParameter('entityName', $entityName)
       ->setParameter('entityId', $entityId)
       ->orderBy('m.' . $orderBy[0], $orderBy[1]) // Replace 'someColumn' with the column you want to order by
