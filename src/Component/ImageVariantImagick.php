@@ -10,7 +10,7 @@ class ImageVariantImagick
 {
   public static function resize(string $imgRef, int $width, int $height): Imagick
   {
-    $bestfit = $height === 0;
+    $bestfit = $width === $height;
     $imagick = new Imagick($imgRef);
     $imagick->resizeImage($width, $height, Imagick::FILTER_LANCZOS, 1, $bestfit);
     return $imagick;
