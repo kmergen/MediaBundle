@@ -6,6 +6,8 @@
        data-upload-url="{{ uploadUrl| default(path('kmergen_media_upload')) }}"
        data-image-list-url="{{ imageListUrl| default( path('kmergen_media_image_list')) }}"
        data-target-dir="{{ targetDir }}"
+       data-max-filesize="{{ maxFilesize }}"
+       data-max-files="{{ maxFiles }}"
       {% if tempKey is defined and tempKey is not empty %}
         data-temp-key="{{ tempKey }}"
       {% endif %}

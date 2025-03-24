@@ -33,7 +33,7 @@ export async function initUpload() {
     const entityName = dropzoneWrapper.dataset.entityName;
     const targetDir = dropzoneWrapper.dataset.targetDir;
     const tempKey = dropzoneWrapper.dataset.tempKey || null;
-    const maxsize = dropzoneWrapper.dataset.maxsize || 16;
+    const maxFilesize = dropzoneWrapper.dataset.maxFilesize || 16;
     const imageVariants = JSON.parse(dropzoneWrapper.dataset.imageVariants || '[]');
     const maxFiles = dropzoneWrapper.dataset.maxFiles || 5;
 
@@ -70,7 +70,7 @@ export async function initUpload() {
           formData.append('tempKey', tempKey);
         }
 
-        formData.append('maxsize', maxsize);
+        formData.append('maxFilesize', maxFilesize);
         imageVariants.forEach((variant, index) => {
           formData.append(`image_variants[${index}]`, variant);
         });
