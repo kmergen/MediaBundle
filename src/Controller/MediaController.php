@@ -66,7 +66,7 @@ class MediaController extends AbstractController
     $entityName = $data['entityName'] ?? null;
     $entityId = $data['entityId'] ?? null;
     $mediaId = $data['mediaId'] ?? null;  // optional mediaId
-    $previewVariant = $request->get('previewVariant', 'crop,140,140,7');
+    $previewVariant = $request->get('previewVariant', 'crop,140,140,70');
 
     if ($entityName === null || $entityId === null) {
       // Handle the case where the expected data is not provided
