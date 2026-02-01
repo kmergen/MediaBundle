@@ -55,7 +55,7 @@ class ImageUploadService
     $media->setEntityName($entityName);
     $media->setPosition($highestPosition + 1);
     if ($entityId === null && $tempKey !== null) {
-      $media->setTempKey($tempKey);
+      $media->settempKey($tempKey);
     }
 
     // Persist the Media entity

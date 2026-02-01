@@ -5,7 +5,6 @@ namespace Kmergen\MediaBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Kmergen\MediaBundle\Repository\MediaRepository;
 
-#[ORM\Index(columns: ['entity_name', 'entity_id', 'position'], name: 'media_lookup_idx')]
 #[ORM\Entity(repositoryClass: MediaRepository::class)]
 class Media
 {
@@ -29,14 +28,11 @@ class Media
   #[ORM\Column]
   private ?int $size = null;
 
-  #[ORM\Column(name: 'entity_name', length: 100, nullable: true)]
-  private ?string $entityName = null;
-
-  #[ORM\Column(name: 'entity_id', nullable: true)]
-  private ?int $entityId = null;
-
   #[ORM\Column(length: 100, nullable: true)]
   private ?string $dimension = null;
+
+  #[ORM\ManyToOne(inversedBy: 'media')]
+  private ?MediaAlbum $album = null;
 
   #[ORM\Column(length: 255, nullable: true)]
   private ?string $tempKey = null;
@@ -104,30 +100,6 @@ class Media
     $this->position = $position;
   }
 
-  public function getEntityName(): ?string
-  {
-    return $this->entityName;
-  }
-
-  public function setEntityName(?string $entityName): static
-  {
-    $this->entityName = $entityName;
-
-    return $this;
-  }
-
-  public function getEntityId(): ?int
-  {
-    return $this->entityId;
-  }
-
-  public function setEntityId(?int $entityId): static
-  {
-    $this->entityId = $entityId;
-
-    return $this;
-  }
-
   public function getDimension(): ?string
   {
     return $this->dimension;
@@ -140,16 +112,27 @@ class Media
     return $this;
   }
 
-  public function getTempKey(): ?string
+  public function getAlbum(): ?MediaAlbum
+  {
+    return $this->album;
+  }
+
+  public function setAlbum(?MediaAlbum $album): static
+  {
+    $this->album = $album;
+
+    return $this;
+  }
+
+  public function tempKey(): ?bool
   {
     return $this->tempKey;
   }
 
-  public function setTempKey(?string $tempKey): static
+  public function settempKey(bool $tempKey): static
   {
     $this->tempKey = $tempKey;
 
     return $this;
   }
-
 }
