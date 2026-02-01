@@ -5,6 +5,7 @@ namespace Kmergen\MediaBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Kmergen\MediaBundle\Repository\MediaRepository;
 
+#[ORM\Index(columns: ['entity_name', 'entity_id', 'position'], name: 'media_lookup_idx')]
 #[ORM\Entity(repositoryClass: MediaRepository::class)]
 class Media
 {
