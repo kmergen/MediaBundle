@@ -12,6 +12,8 @@ use Symfony\Component\HttpKernel\KernelInterface;
 
 class ImageUploadService
 {
+  private string $publicDir;
+
   public function __construct(
     private readonly EntityManagerInterface $em,
     KernelInterface $kernel
