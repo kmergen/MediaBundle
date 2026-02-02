@@ -1,93 +1,79 @@
 <?php
 
-// src/Service/ImageUploadService.php
-
 namespace Kmergen\MediaBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Kmergen\MediaBundle\Entity\Media;
+use Kmergen\MediaBundle\Entity\MediaAlbum;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 class ImageUploadService
 {
-  private string $publicDir;
+    private string $publicDir;
 
-  public function __construct(
-    private readonly EntityManagerInterface $em,
-    KernelInterface $kernel
-  ) {
-    $this->publicDir = $kernel->getProjectDir() . '/public';
-  }
-
-  public function upload(Request $request): Media
-  {
-    // Extract necessary parameters from the request
-    /** @var UploadedFile $file */
-    $file = $request->files->get('file');
-    $targetDir = $request->request->get('targetDir');
-    $entityId = $request->request->get('entityId');
-    if (!$entityId) {
-      $entityId = null;
-    }
-    $entityName = $request->request->get('entityName');
-    $tempKey = $request->request->get('tempKey');
-    if (!$tempKey) {
-      $tempKey = null;
-    }
-    $fileSize = $file->getSize();
-    $imageSize = getimagesize($file->getPathname());
-    $fileDimension = $imageSize[0] . 'x' . $imageSize[1];
-    $originalFilename = $file->getClientOriginalName();
-    $newFilename = pathinfo($originalFilename, PATHINFO_FILENAME) . '_' . uniqid() . '.' . $file->guessExtension();
-
-    // Find the highest current position for this entity
-    $highestPosition = $this->findHighestPosition($entityId, $entityName);
-
-    // Create a new Media entity
-    $media = new Media();
-    $media->setName($originalFilename);
-    $media->setMime($file->getClientMimeType());
-    $media->setSize($fileSize);
-    $media->setDimension($fileDimension);
-    $media->setEntityId($entityId);
-    $media->setEntityName($entityName);
-    $media->setPosition($highestPosition + 1);
-    if ($entityId === null && $tempKey !== null) {
-      $media->settempKey($tempKey);
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        KernelInterface $kernel
+    ) {
+        $this->publicDir = $kernel->getProjectDir() . '/public';
     }
 
-    // Persist the Media entity
-    $this->em->persist($media);
-    $this->em->flush();
+    public function upload(Request $request): Media
+    {
+        /** @var UploadedFile $file */
+        $file = $request->files->get('file');
+        $targetDirBase = $request->request->get('targetDir'); // z.B. 'uploads/rooms'
+        $albumId = $request->request->get('albumId');
+        $tempKey = $request->request->get('tempKey');
+        // 1. Album finden oder neu erstellen
+        $album = null;
+        if ($albumId) {
+            $album = $this->em->getRepository(MediaAlbum::class)->find($albumId);
+        }
 
-    // Determine the target directory
-    $targetDir = $this->publicDir . DIRECTORY_SEPARATOR . $targetDir . DIRECTORY_SEPARATOR . $media->getId();
-    $media->setUrl($request->get('targetDir') . '/' . $media->getId() . '/' . $newFilename);
-    $this->em->flush();
-    // Handle the uploaded file
+        if (!$album) {
+            $album = new MediaAlbum();
+            $this->em->persist($album);
+            // Wir flushen hier noch nicht, damit Media und Album in einer Transaktion landen
+        }
 
-    $file->move($targetDir, $newFilename);
+        // 2. Datei-Infos sammeln
+        $fileSize = $file->getSize();
+        $imageSize = getimagesize($file->getPathname());
+        $fileDimension = $imageSize[0] . 'x' . $imageSize[1];
+        $originalFilename = $file->getClientOriginalName();
+        $newFilename = pathinfo($originalFilename, PATHINFO_FILENAME) . '_' . uniqid() . '.' . $file->guessExtension();
 
-    return $media;
-  }
+        // 3. Neue Media Entity erstellen
+        $media = new Media();
+        $media->setName($originalFilename);
+        $media->setMime($file->getClientMimeType());
+        $media->setSize($fileSize);
+        $media->setDimension($fileDimension);
+        $media->setTempKey($tempKey);
+        
+        // Relation setzen
+        $media->setAlbum($album);
+        
+        // Position automatisch berechnen (innerhalb des Albums)
+        $media->setPosition($album->getMedia()->count() + 1);
 
-  private function findHighestPosition(?int $entityId, ?string $entityName): int
-  {
-    if ($entityId === null) {
-      return 0;
+        // 4. Persistieren
+        $this->em->persist($media);
+        $this->em->flush(); // Jetzt haben wir eine Media-ID für den Ordnerpfad
+
+        // 5. Verzeichnis & URL generieren
+        // Wir nutzen die Media-ID für die Unterordner-Struktur
+        $finalTargetDir = $this->publicDir . DIRECTORY_SEPARATOR . $targetDirBase . DIRECTORY_SEPARATOR . $media->getId();
+        $media->setUrl($targetDirBase . '/' . $media->getId() . '/' . $newFilename);
+        
+        $this->em->flush();
+
+        // 6. Datei physisch verschieben
+        $file->move($finalTargetDir, $newFilename);
+
+        return $media;
     }
-    $result = $this->em->createQueryBuilder()
-      ->select('MAX(m.position)')
-      ->from(Media::class, 'm')
-      ->where('m.entityId = :entityId')
-      ->andWhere('m.entityName = :entityName')
-      ->setParameter('entityId', $entityId)
-      ->setParameter('entityName', $entityName)
-      ->getQuery()
-      ->getSingleScalarResult();
-
-    return $result !== null ? (int)$result : 0;
-  }
 }

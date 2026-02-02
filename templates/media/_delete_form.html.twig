@@ -1,9 +1,0 @@
-<form id="media_delete_form" method="post" action="{{ path('kmergen_media_delete', {'id': media.id}) }}">
-  <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ media.id) }}">
-  <button id="delete_media" data-media-id="{{ media.id }}"
-          data-confirm-message="{{ 'message.confirm_delete'|trans([], 'backend') }}"
-          class="{{ showDeleteIcon ? 'text-red-600 hover:text-red-800' : 'btn-secondary' }}">
-    {{ showDeleteIcon ? ux_icon('flowbite:trash-bin-outline', {class: 'w-6 h-6'}) : 'Delete'|trans([], 'backend') }}
-  </button>
-
-</form>

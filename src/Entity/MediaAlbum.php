@@ -26,6 +26,11 @@ class MediaAlbum
         $this->media = new ArrayCollection();
     }
 
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
     /**
      * @return Collection<int, Media>
      */

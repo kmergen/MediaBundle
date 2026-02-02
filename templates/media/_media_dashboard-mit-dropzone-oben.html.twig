@@ -1,0 +1,36 @@
+{# _media_dashboard-dropzone.html.twig #}
+{% block main %}
+	<div
+		data-controller="media-upload" data-media-upload-upload-url-value="{{ uploadUrl|default(path('kmergen_media_upload')) }}" data-media-upload-list-url-value="{{ listUrl|default(path('kmergen_media_image_list')) }}" data-media-upload-preloaded-value="{{ images|default([])|json_encode }}" data-media-upload-album-id-value="{{ albumId }}" data-media-upload-target-dir-value="images/room/{{ room.id }}" data-media-upload-image-variants-value="{{ imageVariants|default([])|json_encode }}" class="space-y-4">
+		{# 1. Hidden Input für die Form-Übermittlung #}
+		<input
+		type="hidden" data-media-upload-target="hiddenInput" {# name="{{ form.vars.full_name }}[media_order]" #} name="room[media_order]" value="">
+
+		{# 1. BILDER LISTE (Oben, Grid Layout) #}
+		{# Hier definieren wir das Grid für die Vorschaubilder #}
+		<div
+			id="media-preview-list" data-media-upload-target="previewList" class="image-list grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">{# Der Inhalt wird hier per Javascript (fetchImages) reingeladen #}
+		</div>
+		
+		{# 2. DROPZONE (Darunter, Volle Breite) #}
+		<div data-media-upload-target="dropzone" data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop" class="w-full border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-gray-50 hover:border-blue-400 cursor-pointer transition-colors mb-6 group">
+			<div
+				class="flex flex-col items-center justify-center space-y-2">
+				{# Icon #}
+				<svg class="w-10 h-10 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+				</svg>
+				<p class="text-sm text-gray-500 group-hover:text-gray-700 font-medium">
+					Bilder hier ablegen oder klicken zum Hochladen
+				</p>
+				<p class="text-xs text-gray-400">
+					(JPG, PNG bis 10MB)
+				</p>
+			</div>
+
+			{# Das eigentliche File Input (versteckt) #}
+			<input type="file" data-media-upload-target="input" data-action="change->media-upload#onFileChange" multiple accept="image/*" class="hidden">
+		</div>
+		
+	</div>
+{% endblock %}

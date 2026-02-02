@@ -16,26 +16,38 @@ class MediaRepository extends ServiceEntityRepository
     parent::__construct($registry, Media::class);
   }
 
-  public function getEntityMedia(string $entityName, int $entityId, array $orderBy = ['position', 'ASC']): array
+  /**
+   * Holt alle Medien eines Albums.
+   * Ersetzt getEntityMedia().
+   */
+  public function findByAlbum(int $albumId, array $orderBy = ['position' => 'ASC']): array
   {
-    return $this->createQueryBuilder('m')
-      ->where('m.entityName = :entityName AND m.entityId = :entityId')
-      ->setParameter('entityName', $entityName)
-      ->setParameter('entityId', $entityId)
-      ->orderBy('m.' . $orderBy[0], $orderBy[1]) // Replace 'someColumn' with the column you want to order by
-      ->getQuery()
-      ->getArrayResult();
+    $qb = $this->createQueryBuilder('m')
+      ->where('m.album = :albumId')
+      ->setParameter('albumId', $albumId);
+
+    foreach ($orderBy as $field => $direction) {
+      $qb->addOrderBy('m.' . $field, $direction);
+    }
+
+    return $qb->getQuery()->getResult();
   }
 
+  /**
+   * Performantes Batch-Update für Positionen (bleibt fast gleich, nur Typsicherheit erhöht)
+   */
   public function updateMediaPositions(array $positions): void
   {
-    $conn = $this->getEntityManager()->getConnection();
+    if (empty($positions)) {
+      return;
+    }
 
+    $conn = $this->getEntityManager()->getConnection();
     $sql = "UPDATE media SET position = CASE id ";
 
     foreach ($positions as $mediaId => $position) {
       if (!is_numeric($mediaId) || !is_numeric($position)) {
-        throw new \InvalidArgumentException('Invalid input data');
+        throw new \InvalidArgumentException('Invalid input data: Media ID and position must be numeric.');
       }
       $sql .= "WHEN :id_$mediaId THEN :position_$mediaId ";
     }
@@ -51,29 +63,4 @@ class MediaRepository extends ServiceEntityRepository
 
     $stmt->executeStatement();
   }
-
-  //    /**
-  //     * @return Media[] Returns an array of Media objects
-  //     */
-  //    public function findByExampleField($value): array
-  //    {
-  //        return $this->createQueryBuilder('m')
-  //            ->andWhere('m.exampleField = :val')
-  //            ->setParameter('val', $value)
-  //            ->orderBy('m.id', 'ASC')
-  //            ->setMaxResults(10)
-  //            ->getQuery()
-  //            ->getResult()
-  //        ;
-  //    }
-
-  //    public function findOneBySomeField($value): ?Media
-  //    {
-  //        return $this->createQueryBuilder('m')
-  //            ->andWhere('m.exampleField = :val')
-  //            ->setParameter('val', $value)
-  //            ->getQuery()
-  //            ->getOneOrNullResult()
-  //        ;
-  //    }
 }

@@ -42,11 +42,9 @@ class MediaController extends AbstractController
     }
 
     return $this->json([
-      'status' => 'success',
-      'media' => [
-        'id' => $media->getId(),
-        'url' => $media->getUrl()
-      ]
+      'success' => true,
+      'id'      => $media->getId(), // ID direkt oben
+      'url'     => '/' . ltrim($media->getUrl(), '/'),
     ], 200);
   }
 
@@ -56,35 +54,45 @@ class MediaController extends AbstractController
     MediaRepository $mediaRepository,
     ImageService $imageService
   ): Response|string {
+    // 1. Nur AJAX erlauben
     if (!$request->isXmlHttpRequest()) {
       throw new AccessDeniedHttpException();
     }
-    // Decode the JSON content from the request
-    $data = json_decode($request->getContent(), true);
 
-    // Now retrieve entityName and entityId from the decoded data
-    $entityName = $data['entityName'] ?? null;
-    $entityId = $data['entityId'] ?? null;
-    $mediaId = $data['mediaId'] ?? null;  // optional mediaId
-    $previewVariant = $request->get('previewVariant', 'crop,140,140,70');
+    // 2. JSON Body decodieren
+    $content = $request->getContent();
+    $data = !empty($content) ? json_decode($content, true) : [];
 
-    if ($entityName === null || $entityId === null) {
-      // Handle the case where the expected data is not provided
-      throw new \InvalidArgumentException('Entity name or ID is missing.');
+    // Falls JSON ungültig war, ist $data null -> Fallback auf leeres Array
+    if (!is_array($data)) {
+      $data = [];
     }
 
+    // 3. Werte sicher aus dem Array holen
+    // Wir nutzen NICHT mehr $request->get(), da die Daten im JSON Body liegen
+    $albumId = $data['albumId'] ?? null;
+    $mediaId = $data['mediaId'] ?? null;
+
+    // Hier war dein Fehler: Wir lesen 'previewVariant' auch aus dem JSON (oder Default)
+    $previewVariant = $data['previewVariant'] ?? 'crop,140,140,70';
+
+    // 4. Validierung
+    if ($albumId === null && $mediaId === null) {
+      // Rückgabe eines sauberen JSON Fehlers statt 500er Exception (hilft beim Debuggen im Network Tab)
+      return $this->json(['error' => 'Album ID or Media ID is missing.'], 400);
+    }
+
+    // 5. Bilder laden
     if ($mediaId !== null) {
-      // If a specific mediaId is provided, fetch only that image
-      $images = [$mediaRepository->find($mediaId)];
+      // Einzelbild (nach Upload)
+      $image = $mediaRepository->find($mediaId);
+      $images = $image ? [$image] : [];
     } else {
-      // Otherwise, fetch all images for the entity
-      $images = $mediaRepository->findBy([
-        'entityName' => $entityName,
-        'entityId' => $entityId,
-      ], ['position' => 'ASC']);
+      // Alle Bilder des Albums
+      $images = $mediaRepository->findBy(['album' => $albumId], ['position' => 'ASC']);
     }
 
-    // Generate preview variant URLs using ImageService
+    // 6. Thumbnails generieren
     foreach ($images as $image) {
       $image->previewUrl = $imageService->thumb($image->getUrl(), $previewVariant);
     }
@@ -92,21 +100,6 @@ class MediaController extends AbstractController
     return $this->render('@Media/media/_image_list.html.twig', [
       'images' => $images,
     ]);
-  }
-
-  #[Route('/media/update-positions', name: 'kmergen_media_position_update', methods: ['POST'])]
-  public function updatePositions(
-    Request $request,
-    MediaRepository $mediaRepository,
-  ): Response|string {
-    $positions = json_decode($request->getContent(), true)['positions'];
-
-    try {
-      $mediaRepository->updateMediaPositions($positions);
-      return $this->json(['status' => 'success']);
-    } catch (Exception $e) {
-      return $this->json(['status' => 'error', 'message' => $e->getMessage()], 400);
-    }
   }
 
   #[Route('/media/{id}/edit', name: 'kmergen_media_edit', methods: ['POST'])]

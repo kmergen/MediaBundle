@@ -1,0 +1,17 @@
+<div class="photo-item relative w-[140px] h-[140px] bg-gray-100 rounded-lg overflow-hidden border border-gray-200 group animate-fade-in cursor-pointer select-none shadow-sm"
+     data-media-id="{{ image.id }}"
+     data-action="click->media-upload#edit">
+     
+    {# Layer 1: Hintergrund (Unscharf) - Premium Look #}
+    <img src="{{ image.url }}" 
+         class="absolute inset-0 w-full h-full object-cover blur-md opacity-60 scale-110 pointer-events-none z-0">
+    
+    {# Layer 2: Vordergrund (Scharf) #}
+    <img src="{{ image.url }}" 
+         class="relative w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm">
+
+    {# 
+       Das Badge für "Hauptbild" wird vom Controller automatisch gesetzt. 
+       Du kannst es hier leer lassen oder optional eine CSS-Klasse vorbereiten.
+    #}
+</div>
