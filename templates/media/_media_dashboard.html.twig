@@ -1,36 +1,67 @@
-{% block main %}
-	{# 
-		       WICHTIG: Die data-values müssen zum Stimulus Controller passen.
-		       Wir übergeben die bestehenden Bilder (falls vorhanden) als JSON für den Preload.
-		    #}
-	<div
-		data-controller="media-upload" data-media-upload-upload-url-value="{{ uploadUrl|default(path('kmergen_media_upload')) }}" data-media-upload-list-url-value="{{ listUrl|default(path('kmergen_media_image_list')) }}" data-media-upload-preloaded-value="{{ images|default([])|json_encode }}" data-media-upload-album-id-value="{{ albumId }}" data-media-upload-target-dir-value="images/room/{{ room.id }}" data-media-upload-image-variants-value="{{ imageVariants|default([])|json_encode }}" class="space-y-4">
+{# _media_dashboard.html.twig #}
 
-		{# Dropzone & Liste in einem Container #}
-		<div
-			class="flex gap-4 flex-wrap items-start">
+{# 
+    WICHTIG: Wir mappen die Entities hier manuell in ein sauberes Array für JS,
+    damit URL und ID sicher ankommen.
+#}
+{% set initialImagesData = images|map(img => {
+    'id': img.id,
+    'url': asset(img.url),
+    'name': img.name|default('')
+}) %}
 
-			{# Die Liste der Bilder (Sortable Area) #}
-			<div
-				data-media-upload-target="previewList" class="image-list flex gap-4 flex-wrap">{# Bestehende Bilder werden hier via JS (Preload) oder AJAX eingefügt #}
-			</div>
+<div 
+    class="w-full"
+    data-controller="media-upload"
+    data-media-upload-upload-url-value="{{ path('kmergen_media_upload') }}"
+    {# Hier übergeben wir das saubere JSON #}
+    data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}"
+    data-media-upload-album-id-value="{{ form.vars.value.album.id|default('') }}"
+>
 
-			{# Der Trigger für neue Uploads #}
-			<div data-media-upload-target="dropzone" data-action="click->media-upload#onDropzoneClick
-								                             dragover->media-upload#onDragOver
-								                             dragleave->media-upload#onDragLeave
-								                             drop->media-upload#onDrop" class="flex items-center justify-center w-[140px] h-[140px] border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-100 transition-all">
+    {# 1. BILDER LISTE (Jetzt OBEN) #}
+    <div 
+        data-media-upload-target="previewList"
+        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6"
+    >
+        {# JS füllt diesen Bereich basierend auf initial-images-value #}
+    </div>
 
-				<input type="file" data-media-upload-target="input" data-action="change->media-upload#onFileChange" class="hidden" multiple>
+    {# 2. DROPZONE (Jetzt UNTEN, Volle Breite) #}
+    <div 
+        data-media-upload-target="dropzone"
+        data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop"
+        class="w-full border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-gray-50 hover:border-blue-400 cursor-pointer transition-colors group"
+    >
+        <div class="flex flex-col items-center justify-center space-y-2">
+            <svg class="w-10 h-10 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <p class="text-sm text-gray-500 group-hover:text-gray-700 font-medium">
+                Bilder hier ablegen oder klicken zum Hochladen
+            </p>
+        </div>
 
-				<span class="text-4xl text-gray-400">+</span>
-			</div>
-		</div>
+        <input 
+            type="file" 
+            data-media-upload-target="input" 
+            data-action="change->media-upload#onFileChange" 
+            multiple 
+            accept="image/*" 
+            class="hidden"
+        >
+    </div>
 
-		{# 
-				           Dieses Hidden-Input Feld sammelt die IDs in der richtigen Reihenfolge
-				           und wird mit dem Hauptformular abgeschickt.
-				        #}
-		<input type="hidden" name="media_ids" data-media-upload-target="hiddenInput">
-	</div>
-{% endblock %}
+    {# 3. HIDDEN INPUT (Umbenannt in media_ids) #}
+    {# 
+       Achtung: Dein Backend Controller (RoomController::edit) muss dieses Feld 
+       jetzt manuell aus dem Request lesen ($request->get('media_ids')), 
+       da es nicht mehr Teil des 'room[...]'-Forms ist.
+    #}
+    <input 
+        type="hidden" 
+        data-media-upload-target="hiddenInput" 
+        name="media_ids" 
+        value=""
+    >
+</div>

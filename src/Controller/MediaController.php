@@ -37,14 +37,29 @@ class MediaController extends AbstractController
 
     // Handle image variants if specified
     $imageVariants = $request->request->all('image_variants');
+    $previewUrl = null; // Variable für die Vorschau
+
     foreach ($imageVariants as $variant) {
-      $imageService->thumb($media->getUrl(), $variant, true);
+      // Wir merken uns die generierte URL des Thumbnails
+      $generatedUrl = $imageService->thumb($media->getUrl(), $variant, true);
+
+      // Wenn das die Variante für die Vorschau ist (z.B. die erste), nutzen wir sie
+      if (!$previewUrl) {
+        $previewUrl = $generatedUrl;
+      }
+    }
+
+    // Fallback, falls keine Varianten definiert waren: Original-URL
+    if (!$previewUrl) {
+      $previewUrl = '/' . ltrim($media->getUrl(), '/');
     }
 
     return $this->json([
       'success' => true,
-      'id'      => $media->getId(), // ID direkt oben
+      'id'      => $media->getId(),
+      'albumId' => $media->getAlbum()->getId(), // <--- NEU: ID zurückgeben!
       'url'     => '/' . ltrim($media->getUrl(), '/'),
+      'previewUrl' => $previewUrl
     ], 200);
   }
 

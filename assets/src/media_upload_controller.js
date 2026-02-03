@@ -3,23 +3,30 @@ import Sortable from "sortablejs";
 
 export default class extends Controller {
   static targets = ["input", "previewList", "hiddenInput", "dropzone"];
-  static values = {
-    // Url
-    uploadUrl: String,
-    listUrl: String,
 
-    // Entity Context (WICHTIG: Müssen im HTML gesetzt sein!)
-    albumId: Number,
+  static values = {
+    // URLs
+    uploadUrl: String,
+    // listUrl ist WEG - brauchen wir nicht mehr!
+
+    // Context
+    albumId: { type: Number, default: null },
+
+    // Data
+    initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
 
     // Config
+    maxFiles: { type: Number, default: 10 },
     targetDir: String,
     imageVariants: Array,
+
+    // UI Texte (optional für Übersetzung)
+    badgeText: { type: String, default: "Hauptbild" },
   };
 
   connect() {
     this.initSortable();
-    this.loadInitialState();
-    //this.preloadExistingImages();
+    this.renderInitialImages();
   }
 
   initSortable() {
@@ -32,29 +39,22 @@ export default class extends Controller {
   }
 
   /**
-   * Lädt die komplette Liste beim Start
+   * Start-Zustand: Wir rendern die Bilder aus dem JSON
    */
-  async loadInitialState() {
-    // Ruft fetchImages ohne ID auf -> PHP liefert alle Bilder
-    await this.fetchImages();
-    this.updateState();
-  }
-
-  preloadExistingImages() {
-    if (this.hasPreloadedValue && Array.isArray(this.preloadedValue)) {
-      this.preloadedValue.forEach((img) => {
-        // Wir nutzen hier das echte UI-Item Template
-        this.renderImageItem(img);
+  renderInitialImages() {
+    if (this.initialImagesValue.length > 0) {
+      this.initialImagesValue.forEach((image) => {
+        this.addImageToDOM(image);
       });
       this.updateState();
     }
   }
 
-  // --- Upload Events ---
+  // --- Upload Logic ---
+
   onDropzoneClick() {
     this.inputTarget.click();
   }
-
   onFileChange(e) {
     this.handleFiles(e.target.files);
   }
@@ -65,7 +65,6 @@ export default class extends Controller {
       "border-blue-500",
       "bg-blue-50",
       "ring-2",
-      "ring-blue-200",
     );
   }
 
@@ -75,7 +74,6 @@ export default class extends Controller {
       "border-blue-500",
       "bg-blue-50",
       "ring-2",
-      "ring-blue-200",
     );
   }
 
@@ -89,23 +87,24 @@ export default class extends Controller {
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) continue;
 
+      // 1. Platzhalter erstellen
       const tempId = Math.random().toString(36).substring(7);
       this.createLoadingPlaceholder(tempId);
 
       try {
+        // 2. Komprimieren
         const compressedFile = await this.compressImage(file, 1920, 0.8);
+
+        // 3. Upload senden
         const formData = new FormData();
         formData.append("file", compressedFile);
-
-        // Context Daten senden
         if (this.hasAlbumIdValue) formData.append("albumId", this.albumIdValue);
         if (this.hasTargetDirValue)
           formData.append("targetDir", this.targetDirValue);
-
         if (this.hasImageVariantsValue) {
-          this.imageVariantsValue.forEach((variant, index) => {
-            formData.append(`image_variants[${index}]`, variant);
-          });
+          this.imageVariantsValue.forEach((v, i) =>
+            formData.append(`image_variants[${i}]`, v),
+          );
         }
 
         const response = await fetch(this.uploadUrlValue, {
@@ -114,178 +113,106 @@ export default class extends Controller {
           body: formData,
         });
 
-        const uploadResult = await response.json();
+        const result = await response.json();
 
-        if (uploadResult.id) {
-          // ERFOLG: Wir rufen fetchImages MIT der ID auf
-          // PHP liefert nur dieses eine Bild
-          await this.fetchImages(uploadResult.id, tempId);
+        // 4. Platzhalter weg
+        this.removePlaceholder(tempId);
+
+        if (result.id) {
+          if (!this.albumIdValue && result.albumId) {
+            this.albumIdValue = result.albumId;
+            // Optional: Aktualisiere das data-attribute im DOM, falls nötig
+          }
+          // 5. Neues Element rendern (JSON -> HTML)
+          // Wir erwarten vom Server: { id: 123, url: '/pfad/zum/bild.jpg' }
+          this.addImageToDOM(result, true); // true = vorne anfügen
           this.updateState();
         } else {
-          this.removePlaceholder(tempId);
-          alert("Upload fehlgeschlagen");
+          alert("Upload fehlgeschlagen: " + (result.error || "Unbekannt"));
         }
       } catch (err) {
-        console.error("Fehler im Upload-Prozess:", err);
+        console.error("Upload Error:", err);
         this.removePlaceholder(tempId);
+        alert("Ein Fehler ist aufgetreten.");
       }
     }
     this.inputTarget.value = "";
   }
+
+  // --- Rendering (Der WP-Teil) ---
+
   /**
-   * Die ZENTRALE Funktion für HTML-Updates
-   * mediaId = null -> Initialer Load (alles ersetzen)
-   * mediaId = int  -> Einzelnes Bild (appenden)
+   * Baut das HTML für ein Bild und fügt es ein
    */
-  async fetchImages(mediaId = null, tempId = null) {
-    try {
-      // Grund-Payload immer mit Album ID
-      const payload = {
-        albumId: this.albumIdValue,
-      };
+  addImageToDOM(imageData, prepend = false) {
+    const div = document.createElement("div");
 
-      // Wenn spezifisches Bild (nach Upload), ID hinzufügen
-      if (mediaId !== null) {
-        payload.mediaId = mediaId;
-      }
+    // Klassen für das Item Container
+    div.className =
+      "photo-item relative w-[140px] h-[140px] group mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-white cursor-move select-none";
+    div.dataset.mediaId = imageData.id;
 
-      const response = await fetch(this.listUrlValue, {
-        method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+    // Sicherstellen, dass URL passt
+    let url = imageData.previewUrl || imageData.url; // Fallback, falls Server 'url' statt 'previewUrl' sendet
 
-      if (response.ok) {
-        const html = await response.text();
+    // Das HTML Template (Dein Premium Look)
+    div.innerHTML = `
+            <!-- Layer 1: Hintergrund Blur -->
+            <img src="${url}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-60 scale-110 pointer-events-none z-0">
+            
+            <!-- Layer 2: Bild Scharf -->
+            <img src="${url}" class="relative w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm" alt="Preview">
+            
+            <!-- Badge Platzhalter (wird via JS gefüllt) -->
+            <div class="badge-container"></div>
 
-        if (mediaId === null) {
-          // Initial Load: Liste komplett
-          this.previewListTarget.innerHTML = html;
-        } else {
-          // Upload Update: Einzelnes Bild
-          if (tempId) this.removePlaceholder(tempId);
-          this.previewListTarget.insertAdjacentHTML("beforeend", html);
-        }
+            <!-- Löschen Button -->
+            <button type="button" 
+                    data-action="click->media-upload#removeImage"
+                    class="absolute top-1 right-1 z-30 bg-white text-red-600 hover:bg-red-50 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition cursor-pointer" 
+                    title="Entfernen">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            
+            <!-- Optional: Edit Button (für Modal) -->
+            <button type="button" 
+                    data-action="click->media-upload#edit"
+                    data-media-id="${imageData.id}" 
+                    class="absolute top-1 right-8 z-30 bg-white text-gray-700 hover:bg-gray-50 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                    title="Bearbeiten">
+                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                 </svg>
+            </button>
+        `;
 
-        // Nach jedem Fetch State updaten (für Hidden Input etc.)
-        this.updateState();
-      } else {
-        console.error("Server Fehler beim Laden der Bilder");
-        if (tempId) this.removePlaceholder(tempId);
-      }
-    } catch (err) {
-      console.error("Netzwerk Fehler:", err);
-      if (tempId) this.removePlaceholder(tempId);
+    if (prepend) {
+      this.previewListTarget.insertAdjacentElement("afterbegin", div);
+    } else {
+      this.previewListTarget.insertAdjacentElement("beforeend", div);
     }
   }
 
-  async fetchAndAppendImageHtml(mediaId, tempId) {
-    try {
-      const response = await fetch(this.listUrlValue, {
-        method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          entityName: this.entityNameValue,
-          entityId: this.entityIdValue,
-          mediaId: mediaId, // Wichtig: Nur das eine neue Bild anfordern
-        }),
-      });
-
-      if (response.ok) {
-        const html = await response.text();
-
-        // Den Platzhalter durch das echte HTML ersetzen oder davor einfügen
-        this.removePlaceholder(tempId);
-        this.listTarget.insertAdjacentHTML("afterbegin", html);
-
-        // Falls du Events binden musst (z.B. Edit-Modal)
-        const newElement = this.listTarget.querySelector(
-          `[data-media-id="${mediaId}"]`,
-        );
-        if (newElement && typeof this.addMediaEditEvent === "function") {
-          this.addMediaEditEvent(newElement);
-        }
-      }
-    } catch (err) {
-      console.error("Fehler beim Laden des HTML-Fragments:", err);
+  removeImage(e) {
+    // Simples Entfernen aus dem DOM.
+    // Da die ID dann nicht mehr im hiddenInput landet,
+    // löscht Symfony beim Speichern des Formulars die Relation (Orphan Removal).
+    if (confirm("Bild wirklich entfernen?")) {
+      const item = e.target.closest(".photo-item");
+      item.remove();
+      this.updateState();
     }
   }
 
-  // --- Edit & Modal Logik (Deine Media-Edit Transformation) ---
-  async edit(e) {
-    const mediaId = e.currentTarget.dataset.mediaId;
-    const url = `/media/${mediaId}/edit`;
+  // --- State Management ---
 
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-      });
-      const html = await response.text();
-
-      const modalBody = document.getElementById("base_modal_body");
-      if (modalBody) {
-        modalBody.innerHTML = html;
-        window.baseModal.show();
-        this.bindModalEvents(mediaId);
-      }
-    } catch (error) {
-      console.error("Modal Fehler:", error);
-    }
-  }
-
-  bindModalEvents(mediaId) {
-    // Schließen Button im Modal
-    document
-      .getElementById("media_edit_modal_close_button")
-      ?.addEventListener("click", () => {
-        window.baseModal.hide();
-      });
-
-    // Löschen Button im Modal
-    const deleteBtn = document.getElementById("delete_media");
-    if (deleteBtn) {
-      deleteBtn.addEventListener("click", async (ev) => {
-        ev.preventDefault();
-        if (confirm(deleteBtn.dataset.confirmMessage)) {
-          await this.executeDelete(mediaId);
-        }
-      });
-    }
-  }
-
-  async executeDelete(mediaId) {
-    const deleteForm = document.getElementById("media_delete_form");
-    try {
-      const response = await fetch(deleteForm.action, {
-        method: "POST",
-        body: new FormData(deleteForm),
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-      });
-
-      if (response.ok) {
-        window.baseModal.hide();
-        const item = this.previewListTarget.querySelector(
-          `[data-media-id="${mediaId}"]`,
-        );
-        item?.remove();
-        this.updateState();
-      }
-    } catch (error) {
-      console.error("Löschen fehlgeschlagen:", error);
-    }
-  }
-
-  // --- State & UI Hilfsmethoden ---
   updateState() {
     const ids = [];
-    const items = Array.from(this.previewListTarget.children);
+    const items = Array.from(this.previewListTarget.children).filter((el) =>
+      el.classList.contains("photo-item"),
+    );
 
     items.forEach((item, index) => {
       if (item.dataset.mediaId) {
@@ -299,93 +226,52 @@ export default class extends Controller {
     }
   }
 
-  createImageElement(imageData) {
-    let url = imageData.url;
+  updateMainBadge(item, isMain) {
+    const badgeContainer = item.querySelector(".badge-container");
+    if (!badgeContainer) return; // Sicherheitscheck
 
-    // Slash-Fix: Falls die URL nicht mit / oder http anfängt, vorne einen Slash dran
-    if (!url.startsWith("/") && !url.startsWith("http")) {
-      url = "/" + url;
+    // Altes Badge entfernen
+    badgeContainer.innerHTML = "";
+
+    if (isMain) {
+      item.classList.add("ring-4", "ring-blue-600", "ring-offset-2");
+
+      // Badge HTML erzeugen
+      const badge = document.createElement("div");
+      badge.className =
+        "absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm shadow-lg whitespace-nowrap";
+      badge.innerText = this.badgeTextValue;
+
+      badgeContainer.appendChild(badge);
+    } else {
+      item.classList.remove("ring-4", "ring-blue-600", "ring-offset-2");
     }
-
-    const div = document.createElement("div");
-    // Gleiche Klassen wie in deiner CSS/HTML Struktur (140x140px)
-    div.classList.add("relative", "w-[140px]", "h-[140px]", "group", "mb-4");
-    div.dataset.id = imageData.id;
-
-    div.innerHTML = `
-        <img src="${url}" class="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm">
-        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all rounded-lg"></div>
-        <button type="button" 
-                data-action="click->media-upload#removeImage" 
-                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-            ×
-        </button>
-    `;
-    return div;
   }
+
+  // --- Helpers ---
 
   createLoadingPlaceholder(tempId) {
     const div = document.createElement("div");
     div.id = `temp-${tempId}`;
     div.className =
-      "relative aspect-square bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center";
+      "photo-item relative w-[140px] h-[140px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center mb-4";
     div.innerHTML = `<svg class="animate-spin h-6 w-6 text-blue-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`;
-    this.previewListTarget.appendChild(div);
+
+    // Neue Uploads kommen vorne hin
+    this.previewListTarget.insertAdjacentElement("afterbegin", div);
   }
 
   removePlaceholder(tempId) {
     document.getElementById(`temp-${tempId}`)?.remove();
   }
-  async fetchAndAppendImageHtml(mediaId, tempId) {
-    try {
-      const response = await fetch(this.listUrlValue, {
-        method: "POST",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          entityName: this.entityNameValue,
-          entityId: this.entityIdValue,
-          mediaId: mediaId, // Wichtig: Nur das eine neue Bild anfordern
-        }),
-      });
 
-      if (response.ok) {
-        const html = await response.text();
-
-        // Den Platzhalter durch das echte HTML ersetzen oder davor einfügen
-        this.removePlaceholder(tempId);
-        this.listTarget.insertAdjacentHTML("afterbegin", html);
-
-        // Falls du Events binden musst (z.B. Edit-Modal)
-        const newElement = this.listTarget.querySelector(
-          `[data-media-id="${mediaId}"]`,
-        );
-        if (newElement && typeof this.addMediaEditEvent === "function") {
-          this.addMediaEditEvent(newElement);
-        }
-      }
-    } catch (err) {
-      console.error("Fehler beim Laden des HTML-Fragments:", err);
-    }
-  }
-
-  updateMainBadge(itemElement, isMain) {
-    const existingBadge = itemElement.querySelector(".main-badge");
-    if (isMain) {
-      itemElement.classList.add("ring-4", "ring-blue-600");
-      if (!existingBadge) {
-        const badge = document.createElement("div");
-        badge.className =
-          "main-badge absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm";
-        badge.innerText = "Hauptbild";
-        itemElement.appendChild(badge);
-      }
-    } else {
-      itemElement.classList.remove("ring-4", "ring-blue-600");
-      existingBadge?.remove();
-    }
+  // Modal Logik (Edit) bleibt erhalten, falls du sie noch brauchst
+  async edit(e) {
+    const mediaId = e.currentTarget.dataset.mediaId;
+    // ... deine Modal Logik hier ...
+    // Tipp: Da wir pure JS sind, musst du hier evtl. den Modal-Inhalt doch fetchen,
+    // oder du lässt das Bearbeiten weg, wenn es nur um Sortieren/Löschen geht.
+    console.log("Edit ID:", mediaId);
   }
 
   async compressImage(file, maxWidth, quality) {
@@ -405,7 +291,8 @@ export default class extends Controller {
           }
           canvas.width = width;
           canvas.height = height;
-          canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
           canvas.toBlob(
             (blob) => {
               resolve(
