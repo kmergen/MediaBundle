@@ -10,11 +10,13 @@
     'name': img.name|default('')
 }) %}
 
-{# Fallback, falls tempKey nicht vom Controller kommt (weniger sauber, aber funktioniert) #}
+{% set isAutoSave = autoSave|default(false) %}
+{% set currentTempKey = null %}
+	{% if not isAutoSave %}
 {% set currentTempKey = tempKey|default('temp_' ~ random() ~ 'now'|date('U')) %}
-
+{% endif %}
 	<div
-	class="w-full" data-controller="media-upload" data-media-upload-upload-url-value="{{ path('kmergen_media_upload') }}" data-media-upload-target-media-dir-value="{{ targetMediaDir|default('images') }}" data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}" data-media-upload-album-id-value="{{ albumId|default('') }}" data-media-upload-temp-key-value="{{ currentTempKey }}" data-media-upload-image-variants-value="{{ imageVariants|default([])|json_encode }}"> {# 1. BILDER LISTE (Jetzt OBEN) #}
+	class="w-full" data-controller="media-upload" data-media-upload-upload-url-value="{{ path('kmergen_media_upload') }}" data-media-upload-reorder-url-value="{{ path('kmergen_media_reorder') }}" data-media-upload-delete-url-template-value="{{ path('kmergen_media_delete', {id:'ID_PLACEHOLDER'}) }}" data-media-upload-target-media-dir-value="{{ targetMediaDir|default('images') }}" data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}" data-media-upload-album-id-value="{{ albumId|default('') }}" data-media-upload-auto-save-value="{{ isAutoSave }}" data-media-upload-temp-key-value="{{ currentTempKey }}" data-media-upload-image-variants-value="{{ imageVariants|default([])|json_encode }}"> {# 1. BILDER LISTE (Jetzt OBEN) #}
 	<div
 		data-media-upload-target="previewList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6">{# JS füllt diesen Bereich basierend auf initial-images-value #}
 	</div>
@@ -34,9 +36,9 @@
 
 	{# 3. HIDDEN INPUT (Umbenannt in media_ids) #}
 	{# 
-			       Achtung: Dein Backend Controller (RoomController::edit) muss dieses Feld 
-			       jetzt manuell aus dem Request lesen ($request->get('media_ids')), 
-			       da es nicht mehr Teil des 'room[...]'-Forms ist.
-			    #}
+				       Achtung: Dein Backend Controller (RoomController::edit) muss dieses Feld 
+				       jetzt manuell aus dem Request lesen ($request->get('media_ids')), 
+				       da es nicht mehr Teil des 'room[...]'-Forms ist.
+				    #}
 	<input type="hidden" data-media-upload-target="hiddenInput" name="media_ids" value="">
 </div>

@@ -7,6 +7,8 @@ export default class extends Controller {
   static values = {
     // URLs
     uploadUrl: String,
+    reorderUrl: String,
+    deleteUrlTemplate: String,
 
     // Context
     albumId: { type: Number, default: null },
@@ -16,6 +18,7 @@ export default class extends Controller {
     initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
 
     // Config
+    autoSave: { type: Boolean, default: false },
     maxFiles: { type: Number, default: 10 },
     targetMediaDir: String,
     imageVariants: Array,
@@ -34,7 +37,13 @@ export default class extends Controller {
       animation: 150,
       ghostClass: "opacity-50",
       draggable: ".photo-item",
-      onEnd: () => this.updateState(),
+      onEnd: () => {
+        this.updateState();
+        // Wenn Autosave an ist, Sortierung sofort senden
+        if (this.autoSaveValue) {
+          this.saveOrder();
+        }
+      },
     });
   }
 
@@ -104,7 +113,7 @@ export default class extends Controller {
         if (this.hasTargetMediaDirValue) {
           formData.append("targetMediaDir", this.targetMediaDirValue);
         }
-        if (this.hasTempKeyValue) {
+        if (this.hasTempKeyValue && this.autoSaveValue) {
           formData.append("tempKey", this.tempKeyValue);
         }
         if (this.hasImageVariantsValue) {
@@ -133,6 +142,10 @@ export default class extends Controller {
           // Wir erwarten vom Server: { id: 123, url: '/pfad/zum/bild.jpg' }
           this.addImageToDOM(result); // true = vorne anfügen
           this.updateState();
+          if (result.id && this.autoSaveValue) {
+            // Da das neue Bild meist hinten angefügt wird oder die Reihenfolge ändert:
+            this.saveOrder();
+          }
         } else {
           alert("Upload fehlgeschlagen: " + (result.error || "Unbekannt"));
         }
@@ -202,13 +215,63 @@ export default class extends Controller {
   }
 
   removeImage(e) {
-    // Simples Entfernen aus dem DOM.
-    // Da die ID dann nicht mehr im hiddenInput landet,
-    // löscht Symfony beim Speichern des Formulars die Relation (Orphan Removal).
-    if (confirm("Bild wirklich entfernen?")) {
-      const item = e.target.closest(".photo-item");
-      item.remove();
-      this.updateState();
+    if (!confirm("Bild wirklich entfernen?")) return;
+
+    const item = e.target.closest(".photo-item");
+    const mediaId = item.dataset.mediaId;
+
+    // UI sofort aktualisieren (Optimistic UI)
+    item.remove();
+    this.updateState();
+
+    // Server Request bei Autosave
+    if (this.autoSaveValue && mediaId) {
+      this.deleteRemote(mediaId);
+    }
+  }
+
+  // Nur für Autosave Modus
+  async saveOrder() {
+    if (!this.hasReorderUrlValue) return;
+
+    // IDs aus dem Hidden Input holen (der wird von updateState gefüllt)
+    // oder direkt aus dem DOM lesen
+    const ids = this.hiddenInputTarget.value.split(",").filter(Boolean);
+
+    try {
+      await fetch(this.reorderUrlValue, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ ids: ids }),
+      });
+      console.log("Order saved");
+    } catch (err) {
+      console.error("Reorder failed", err);
+      // Optional: User benachrichtigen
+    }
+  }
+
+  // Nur für Autosave Modus
+  async deleteRemote(id) {
+    if (!this.hasDeleteUrlTemplateValue) return;
+
+    //  URL bauen: Template "/media/ID_PLACEHOLDER" -> "/media/123"
+    // Oder einfache String Concatenation, wenn die URL Struktur simple ist
+    const url = this.deleteUrlTemplateValue.replace("ID_PLACEHOLDER", id);
+
+    try {
+      await fetch(url, {
+        method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      console.log(`Image ${id} deleted permanently`);
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Fehler beim Löschen auf dem Server.");
+      // Optional: Bild wieder ins DOM einfügen (Rollback)
     }
   }
 

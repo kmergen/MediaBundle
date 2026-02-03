@@ -1,5 +1,5 @@
 <?php
-// src/Service/MediaDeleteService.php
+
 namespace Kmergen\MediaBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,36 +23,57 @@ class MediaDeleteService
   }
 
   /**
-   * Deletes a media entity and its associated file from the filesystem.
+   * Löscht ein einzelnes Media Entity und die Dateien.
+   * $flush = false ist nützlich für Massenlöschungen.
    */
-  public function deleteMedia(Media $media): void
+  public function deleteMedia(Media $media, bool $flush = true): void
   {
-    // Delete the file from the filesystem
-    $mediaDir = Path::join($this->publicDir, $media->getUrl());
-    $mediaDir = dirname($mediaDir); // Get the directory path
-    try {
-      if ($this->filesystem->exists($mediaDir)) {
-        $this->filesystem->remove($mediaDir);
-        $this->logger->info("Deleted media directory: {$mediaDir}");
-      } else {
-        $this->logger->warning("Media directory not found: {$mediaDir}");
+    // 1. Filesystem Pfad ermitteln
+    // Wir gehen davon aus: public/uploads/media/{id}/image.jpg
+    $fullPath = Path::join($this->publicDir, $media->getUrl());
+    $directoryToDelete = dirname($fullPath);
+
+    // --- SICHERHEITSCHECK ---
+    // Wir prüfen, ob der Ordnername wirklich der ID entspricht.
+    // Das verhindert, dass wir "uploads/" löschen, falls die Struktur flach ist.
+    $folderName = basename($directoryToDelete);
+
+    if ((string)$media->getId() === $folderName) {
+      try {
+        if ($this->filesystem->exists($directoryToDelete)) {
+          $this->filesystem->remove($directoryToDelete);
+          $this->logger->info("Deleted media directory: {$directoryToDelete}");
+        }
+      } catch (\Exception $e) {
+        // Wir loggen nur und werfen nicht, damit der DB-Eintrag trotzdem gelöscht wird (keine Broken Links)
+        $this->logger->error("Failed to delete media files: {$e->getMessage()}");
       }
-    } catch (\Exception $e) {
-      $this->logger->error("Failed to delete media directory: {$e->getMessage()}");
+    } else {
+      // Fallback: Wenn keine ID-Ordnerstruktur existiert, löschen wir NUR die Datei, nicht den Ordner!
+      try {
+        if ($this->filesystem->exists($fullPath)) {
+          $this->filesystem->remove($fullPath);
+          $this->logger->info("Deleted media file only (unsafe dir structure): {$fullPath}");
+        }
+      } catch (\Exception $e) {
+        $this->logger->error("Failed to delete media file: {$e->getMessage()}");
+      }
     }
 
-    // Remove the media entity from the database
+    // 2. Datenbank bereinigen
     $this->em->remove($media);
-    $this->em->flush();
+
+    if ($flush) {
+      $this->em->flush();
+    }
   }
 
-  /**
-   * Deletes multiple media entities and their associated files.
-   */
   public function deleteMultipleMedia(array $mediaEntities): void
   {
     foreach ($mediaEntities as $media) {
-      $this->deleteMedia($media);
+      // Flush erst ganz am Ende -> Performance Boost
+      $this->deleteMedia($media, false);
     }
+    $this->em->flush();
   }
 }
