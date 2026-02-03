@@ -125,7 +125,7 @@ export default class extends Controller {
           }
           // 5. Neues Element rendern (JSON -> HTML)
           // Wir erwarten vom Server: { id: 123, url: '/pfad/zum/bild.jpg' }
-          this.addImageToDOM(result, true); // true = vorne anfügen
+          this.addImageToDOM(result); // true = vorne anfügen
           this.updateState();
         } else {
           alert("Upload fehlgeschlagen: " + (result.error || "Unbekannt"));
@@ -258,7 +258,7 @@ export default class extends Controller {
     div.innerHTML = `<svg class="animate-spin h-6 w-6 text-blue-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`;
 
     // Neue Uploads kommen vorne hin
-    this.previewListTarget.insertAdjacentElement("afterbegin", div);
+    this.previewListTarget.insertAdjacentElement("beforeend", div);
   }
 
   removePlaceholder(tempId) {
