@@ -24,9 +24,12 @@ class ImageUploadService
     {
         /** @var UploadedFile $file */
         $file = $request->files->get('file');
-        $targetDirBase = $request->request->get('targetDir'); // z.B. 'uploads/rooms'
+        $targetMediaDir = $request->request->get('targetMediaDir');
         $albumId = $request->request->get('albumId');
         $tempKey = $request->request->get('tempKey');
+        if (!$tempKey) {
+            $tempKey = null;
+        }
         // 1. Album finden oder neu erstellen
         $album = null;
         if ($albumId) {
@@ -53,10 +56,10 @@ class ImageUploadService
         $media->setSize($fileSize);
         $media->setDimension($fileDimension);
         $media->setTempKey($tempKey);
-        
+
         // Relation setzen
         $media->setAlbum($album);
-        
+
         // Position automatisch berechnen (innerhalb des Albums)
         $media->setPosition($album->getMedia()->count() + 1);
 
@@ -66,9 +69,9 @@ class ImageUploadService
 
         // 5. Verzeichnis & URL generieren
         // Wir nutzen die Media-ID für die Unterordner-Struktur
-        $finalTargetDir = $this->publicDir . DIRECTORY_SEPARATOR . $targetDirBase . DIRECTORY_SEPARATOR . $media->getId();
-        $media->setUrl($targetDirBase . '/' . $media->getId() . '/' . $newFilename);
-        
+        $finalTargetDir = $this->publicDir . DIRECTORY_SEPARATOR . $targetMediaDir . DIRECTORY_SEPARATOR . $media->getId();
+        $media->setUrl($targetMediaDir . '/' . $media->getId() . '/' . $newFilename);
+
         $this->em->flush();
 
         // 6. Datei physisch verschieben

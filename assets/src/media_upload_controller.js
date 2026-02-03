@@ -7,17 +7,17 @@ export default class extends Controller {
   static values = {
     // URLs
     uploadUrl: String,
-    // listUrl ist WEG - brauchen wir nicht mehr!
 
     // Context
     albumId: { type: Number, default: null },
+    tempKey: String,
 
     // Data
     initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
 
     // Config
     maxFiles: { type: Number, default: 10 },
-    targetDir: String,
+    targetMediaDir: String,
     imageVariants: Array,
 
     // UI Texte (optional für Übersetzung)
@@ -98,12 +98,18 @@ export default class extends Controller {
         // 3. Upload senden
         const formData = new FormData();
         formData.append("file", compressedFile);
-        if (this.hasAlbumIdValue) formData.append("albumId", this.albumIdValue);
-        if (this.hasTargetDirValue)
+        if (this.hasAlbumIdValue) {
+          formData.append("albumId", this.albumIdValue);
+        }
+        if (this.hasTargetMediaDirValue) {
           formData.append("targetDir", this.targetDirValue);
+        }
+        if (this.hasTempKeyValue) {
+          formData.append("tempKey", this.tempKeyValue);
+        }
         if (this.hasImageVariantsValue) {
           this.imageVariantsValue.forEach((v, i) =>
-            formData.append(`image_variants[${i}]`, v),
+            formData.append(`imageVariants[${i}]`, v),
           );
         }
 
