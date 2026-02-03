@@ -102,7 +102,7 @@ export default class extends Controller {
           formData.append("albumId", this.albumIdValue);
         }
         if (this.hasTargetMediaDirValue) {
-          formData.append("targetDir", this.targetDirValue);
+          formData.append("targetMediaDir", this.targetMediaDirValue);
         }
         if (this.hasTempKeyValue) {
           formData.append("tempKey", this.tempKeyValue);

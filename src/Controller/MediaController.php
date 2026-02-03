@@ -36,7 +36,7 @@ class MediaController extends AbstractController
     $media = $imageUploadService->upload($request);
 
     // Handle image variants if specified
-    $imageVariants = $request->request->all('image_variants');
+    $imageVariants = $request->request->all('imageVariants');
     $previewUrl = null; // Variable für die Vorschau
 
     foreach ($imageVariants as $variant) {
@@ -51,7 +51,7 @@ class MediaController extends AbstractController
 
     // Fallback, falls keine Varianten definiert waren: Original-URL
     if (!$previewUrl) {
-      $previewUrl = '/' . ltrim($media->getUrl(), '/');
+      $previewUrl = $media->getUrl();
     }
 
     return $this->json([
@@ -59,7 +59,7 @@ class MediaController extends AbstractController
       'id'      => $media->getId(),
       'albumId' => $media->getAlbum()->getId(), // <--- NEU: ID zurückgeben!
       'url'     => '/' . ltrim($media->getUrl(), '/'),
-      'previewUrl' => $previewUrl
+      'previewUrl' => '/' . ltrim($previewUrl, '/'),
     ], 200);
   }
 

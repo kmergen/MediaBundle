@@ -14,7 +14,7 @@ class ImageUploadService
     private string $publicDir;
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityManagerInterface $em, 
         KernelInterface $kernel
     ) {
         $this->publicDir = $kernel->getProjectDir() . '/public';
