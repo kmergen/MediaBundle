@@ -81,8 +81,8 @@ class MediaController extends AbstractController
         foreach ($ids as $index => $id) {
             $media = $repo->find($id);
             if ($media) {
-                // Position ist Index + 1
-                $media->setPosition($index + 1);
+                // Position ist Index
+                $media->setPosition($index);
             }
         }
 
