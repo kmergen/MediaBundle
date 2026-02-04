@@ -13,9 +13,7 @@ use Symfony\Component\Filesystem\Filesystem;
 readonly class ImageService
 {
 
-  public function __construct(private Filesystem $filesystem)
-  {
-  }
+  public function __construct(private Filesystem $filesystem) {}
 
   /**
    * Generates a thumbnail for the given image reference based on the specified variant.
@@ -135,7 +133,7 @@ readonly class ImageService
   ): string {
     $pathInfo = pathinfo($imgRef);
     return sprintf(
-      '%s/%s_%s_%s_%s',
+      '%s/%s_%sx%s_q%s',
       $pathInfo['dirname'],
       $action,
       $width,

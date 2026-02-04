@@ -14,7 +14,7 @@ class ImageUploadService
     private string $publicDir;
 
     public function __construct(
-        private readonly EntityManagerInterface $em, 
+        private readonly EntityManagerInterface $em,
         KernelInterface $kernel
     ) {
         $this->publicDir = $kernel->getProjectDir() . '/public';
@@ -47,7 +47,7 @@ class ImageUploadService
         $imageSize = getimagesize($file->getPathname());
         $fileDimension = $imageSize[0] . 'x' . $imageSize[1];
         $originalFilename = $file->getClientOriginalName();
-        $newFilename = pathinfo($originalFilename, PATHINFO_FILENAME) . '_' . uniqid() . '.' . $file->guessExtension();
+        $newFilename = pathinfo($originalFilename, PATHINFO_FILENAME) . '.' . $file->guessExtension();
 
         // 3. Neue Media Entity erstellen
         $media = new Media();
