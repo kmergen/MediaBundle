@@ -132,32 +132,3 @@ class MediaController extends AbstractController
 //             'media' => $media,
 //         ]);
     // }
-//   #[Route('/media/test', name: 'kmergen_media_test', methods: ['GET'])]
-//   public function test(
-//     Request $request,
-//     MediaRepository $mediaRepository,
-//     EntityManagerInterface $em
-//   ): Response {
-//     // Access the parameter
-//     $phrase = $this->params->get('media.phrase');
-//     // Render the media details into a Twig template
-//     return $this->render('@Media/test1.html.twig', [
-//       'phrase' => $phrase,
-//     ]);
-//   }
-
-//   #[Route('/media/{id}/delete', name: 'kmergen_media_delete', methods: ['POST'])]
-//   public function delete(
-//     Media $media,
-//     Request $request,
-//     EntityManagerInterface $em,
-//     MediaDeleteService $mediaDeleteService
-//   ): Response {
-//     // Remove the media entity from the database
-//     if ($this->isCsrfTokenValid('delete' . $media->getId(), $request->getPayload()->get('_token'))) {
-//       $mediaDeleteService->deleteMedia($media);
-//     }
-//     // Return a JSON response or redirect, depending on your needs
-//     return $this->json(['status' => 'success', 'message' => 'Media deleted successfully.']);
-//   }
-// }
