@@ -13,6 +13,7 @@ export default class extends Controller {
     // Context
     albumId: { type: Number, default: null },
     tempKey: String,
+    csrf: String,
 
     // Data
     initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
@@ -265,7 +266,10 @@ export default class extends Controller {
     try {
       await fetch(url, {
         method: "DELETE",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": this.csrfValue,
+        },
       });
       console.log(`Image ${id} deleted permanently`);
     } catch (err) {

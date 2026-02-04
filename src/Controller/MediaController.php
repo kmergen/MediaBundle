@@ -99,13 +99,13 @@ class MediaController extends AbstractController
         MediaDeleteService $mediaDeleteService
     ): Response {
         // CSRF Check
-        // Wir holen den Token entweder aus dem Body ODER aus einem Header (X-CSRF-TOKEN)
-       // $token = $request->getPayload()->get('_token') ?? $request->headers->get('X-CSRF-TOKEN');
+        // 1. Token aus dem Header holen
+        $token = $request->headers->get('X-CSRF-TOKEN');
 
-        // if (!$this->isCsrfTokenValid('delete' . $media->getId(), $token)) {
-        //     return $this->json(['status' => 'error', 'message' => 'Invalid CSRF token'], 419);
-        // }
-
+        // 2. Prüfen gegen den generischen Namen 'media_delete' (muss mit Twig übereinstimmen)
+        if (!$this->isCsrfTokenValid('media_delete', $token)) {
+            return $this->json(['status' => 'error', 'message' => 'Invalid CSRF token'], 419);
+        }
         // Löschen
         try {
             $mediaDeleteService->deleteMedia($media);
