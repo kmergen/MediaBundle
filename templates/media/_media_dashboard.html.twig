@@ -4,39 +4,58 @@
     WICHTIG: Wir mappen die Entities hier manuell in ein sauberes Array für JS,
     damit URL und ID sicher ankommen.
 #}
-{% set initialImagesData = images|map(img => {
-    'id': img.id,
-    'url': asset(img.url),
-    'name': img.name|default('')
-}) %}
+{% set initialImagesData = config.images %}
 
-{% set isAutoSave = autoSave|default(false) %}
+{% set isAutoSave = config.autoSave|default(false) %}
 {% set currentTempKey = null %}
-	{% if not isAutoSave %}
-{% set currentTempKey = tempKey|default('temp_' ~ random() ~ 'now'|date('U')) %}
+{% if not isAutoSave %}
+    {% set currentTempKey = config.tempKey|default('temp_' ~ random() ~ 'now'|date('U')) %}
 {% endif %}
-	<div class="w-full" data-controller="media-upload" data-media-upload-upload-url-value="{{ path('kmergen_media_upload') }}" data-media-upload-reorder-url-value="{{ path('kmergen_media_reorder') }}" data-media-upload-delete-url-template-value="{{ path('kmergen_media_delete', {id:'ID_PLACEHOLDER'}) }}" data-media-upload-target-media-dir-value="{{ targetMediaDir|default('images') }}" data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}" data-media-upload-album-id-value="{{ albumId|default('') }}" data-media-upload-auto-save-value="{{ isAutoSave }}" data-media-upload-temp-key-value="{{ currentTempKey }}" data-media-upload-image-variants-value="{{ imageVariants|default([])|json_encode }}" data-media-upload-csrf-value="{{ csrf_token('media_delete') }}"> <div
-		data-media-upload-target="previewList" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6">{# JS füllt diesen Bereich basierend auf initial-images-value #}
-	</div>
+<div class="kmm-dashboard-container"
+     data-controller="media-upload"
+     data-media-upload-upload-url-value="{{ path("kmergen_media_upload") }}"
+     data-media-upload-reorder-url-value="{{ path("kmergen_media_reorder") }}"
+     data-media-upload-delete-url-template-value="{{ path('kmergen_media_delete', {'id': 'ID_PLACEHOLDER'}) }}"
+     data-media-upload-target-media-dir-value="{{ config.targetMediaDir|default("images") }}"
+     data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}"
+     data-media-upload-album-id-value="{{ config.albumId|default("") }}"
+     data-media-upload-auto-save-value="{{ isAutoSave }}"
+     data-media-upload-temp-key-value="{{ currentTempKey }}"
+     data-media-upload-image-variants-value="{{ config.imageVariants|default([]) |json_encode }}"
+     data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
+    <div data-media-upload-target="previewList"
+         class="kmm-dashboard-preview-grid">{# JS füllt diesen Bereich basierend auf initial-images-value #}</div>
 
-	{# 2. DROPZONE (Jetzt UNTEN, Volle Breite) #}
-	<div data-media-upload-target="dropzone" data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop" class="w-full border-2 border-dashed border-gray-300 rounded-lg p-10 text-center hover:bg-gray-50 hover:border-blue-400 cursor-pointer transition-colors group">
-		<div class="flex flex-col items-center justify-center space-y-2">
-			<svg class="w-10 h-10 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewbox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-			</svg>
-			<p class="text-sm text-gray-500 group-hover:text-gray-700 font-medium">
-				Bilder hier ablegen oder klicken zum Hochladen
-			</p>
-		</div>
-		<input type="file" data-media-upload-target="input" data-action="change->media-upload#onFileChange" multiple accept="image/*" class="hidden">
-	</div>
+    {# 2. DROPZONE (Jetzt UNTEN, Volle Breite) #}
+    <div data-media-upload-target="dropzone"
+         data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop"
+         class="kmm-dashboard-dropzone">
+        <div class="kmm-dropzone-info">
+            <svg class="kmm-dropzone-info-svg"
+                 fill="none"
+                 stroke="currentColor"
+                 viewbox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                </path>
+            </svg>
+            <p class="kmm-dropzone-info-text">Bilder hier ablegen oder klicken zum Hochladen</p>
+        </div>
+        <input type="file"
+               data-media-upload-target="input"
+               data-action="change->media-upload#onFileChange"
+               multiple
+               accept="image/*"
+               class="hidden">
+    </div>
 
-	{# 3. HIDDEN INPUT (Umbenannt in media_ids) #}
-	{# 
+    {# 3. HIDDEN INPUT (Umbenannt in media_ids) #}
+    {#
 					       Achtung: Dein Backend Controller (RoomController::edit) muss dieses Feld 
 					       jetzt manuell aus dem Request lesen ($request->get('media_ids')), 
 					       da es nicht mehr Teil des 'room[...]'-Forms ist.
 					    #}
-	<input type="hidden" data-media-upload-target="hiddenInput" name="media_ids" value="">
+    <input type="hidden"
+           data-media-upload-target="hiddenInput"
+           name="media_ids"
+           value="">
 </div>

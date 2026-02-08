@@ -1,5 +1,48 @@
 /* media-bundle/assets/css/media.css */
 @layer components {
+  /* ############### Media Dashboard Styles (find in templates/media_dashboard.html.twig) ############## */
+  
+  .kmm-dashboard-container {
+    @apply w-full
+  }
+  
+  .kmm-dashboard-preview-grid {
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6
+  }
+
+  .kmm-dashboard-dropzone {
+  @apply w-full border-2 border-dashed border-gray-300 rounded-lg p-10 text-center cursor-pointer transition-colors bg-white;
+
+    /* Wenn die Dropzone gehovert wird... */
+    &:hover {
+      @apply bg-gray-50 border-blue-400;
+
+      /* ...ändere die Farbe des SVGs */
+      .kmm-dropzone-info-svg {
+        @apply text-blue-500;
+      }
+
+      /* ...und die Farbe des Textes */
+      .kmm-dropzone-info-text {
+        @apply text-gray-700;
+      }
+    }
+  }
+  .kmm-dropzone-info {
+    @apply flex flex-col items-center justify-center space-y-2
+  }
+
+  .kmm-dropzone-info-svg {
+    @apply w-10 h-10 text-gray-400 transition-colors
+  }
+
+  .kmm-dropzone-info-text {
+    @apply text-sm text-gray-500 font-medium transition-colors
+  }
+
+
+  /* ############### Preview Image Styles (find in assets/src/media_upload_controller.js) ############## */
+
   .kmm-photo-item {
     @apply flex items-center justify-center relative w-36 h-36 mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-white cursor-move select-none;
   }
@@ -48,11 +91,11 @@
   .kmm-main-image-border {
     @apply ring-4 ring-blue-600 ring-offset-2;
   }
+
   .kmm-main-image-badge {
     @apply absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm shadow-lg whitespace-nowrap;
   }
-  
-  /* Der Hover-Effekt funktioniert auch ohne 'group' der Haupt-App */
+    
   .kmm-photo-item:hover .kmm-delete-btn, .kmm-photo-item:hover .kmm-edit-btn {
     @apply opacity-100;
   }
