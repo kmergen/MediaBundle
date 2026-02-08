@@ -1,3 +1,4 @@
+// media-bundle/assets/src/media_upload_controller.js
 import { Controller } from "@hotwired/stimulus";
 import Sortable from "sortablejs";
 
@@ -37,7 +38,7 @@ export default class extends Controller {
     new Sortable(this.previewListTarget, {
       animation: 150,
       ghostClass: "opacity-50",
-      draggable: ".photo-item",
+      draggable: ".kmm-photo-item",
       onEnd: () => {
         this.updateState();
         // Wenn Autosave an ist, Sortierung sofort senden
@@ -168,8 +169,7 @@ export default class extends Controller {
     const div = document.createElement("div");
 
     // Klassen für das Item Container
-    div.className =
-      "photo-item relative w-[140px] h-[140px] group mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-white cursor-move select-none";
+    div.className = "kmm-photo-item";
     div.dataset.mediaId = imageData.id;
 
     // Sicherstellen, dass URL passt
@@ -178,10 +178,10 @@ export default class extends Controller {
     // Das HTML Template (Dein Premium Look)
     div.innerHTML = `
             <!-- Layer 1: Hintergrund Blur -->
-            <img src="${url}" class="absolute inset-0 w-full h-full object-cover blur-md opacity-60 scale-110 pointer-events-none z-0">
+            <img src="${url}" class="kmm-preview-bg-image">
             
             <!-- Layer 2: Bild Scharf -->
-            <img src="${url}" class="relative w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm" alt="Preview">
+            <img src="${url}" class="kmm-preview-image" alt="Preview">
             
             <!-- Badge Platzhalter (wird via JS gefüllt) -->
             <div class="badge-container"></div>
@@ -189,9 +189,9 @@ export default class extends Controller {
             <!-- Löschen Button -->
             <button type="button" 
                     data-action="click->media-upload#removeImage"
-                    class="absolute top-1 right-1 z-30 bg-white text-red-600 hover:bg-red-50 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition cursor-pointer" 
+                    class="kmm-delete-btn" 
                     title="Entfernen">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
@@ -200,9 +200,9 @@ export default class extends Controller {
             <button type="button" 
                     data-action="click->media-upload#edit"
                     data-media-id="${imageData.id}" 
-                    class="absolute top-1 right-8 z-30 bg-white text-gray-700 hover:bg-gray-50 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                    class="kmm-edit-btn"
                     title="Bearbeiten">
-                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                  </svg>
             </button>
@@ -218,7 +218,7 @@ export default class extends Controller {
   removeImage(e) {
     if (!confirm("Bild wirklich entfernen?")) return;
 
-    const item = e.target.closest(".photo-item");
+    const item = e.target.closest(".kmm-photo-item");
     const mediaId = item.dataset.mediaId;
 
     // UI sofort aktualisieren (Optimistic UI)
@@ -284,7 +284,7 @@ export default class extends Controller {
   updateState() {
     const ids = [];
     const items = Array.from(this.previewListTarget.children).filter((el) =>
-      el.classList.contains("photo-item"),
+      el.classList.contains("kmm-photo-item"),
     );
 
     items.forEach((item, index) => {
@@ -307,17 +307,16 @@ export default class extends Controller {
     badgeContainer.innerHTML = "";
 
     if (isMain) {
-      item.classList.add("ring-4", "ring-blue-600", "ring-offset-2");
+      item.classList.add("kmm-main-image-border");
 
       // Badge HTML erzeugen
       const badge = document.createElement("div");
-      badge.className =
-        "absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm shadow-lg whitespace-nowrap";
+      badge.className = "kmm-main-image-badge";
       badge.innerText = this.badgeTextValue;
 
       badgeContainer.appendChild(badge);
     } else {
-      item.classList.remove("ring-4", "ring-blue-600", "ring-offset-2");
+      item.classList.remove("kmm-main-image-border");
     }
   }
 
@@ -326,9 +325,8 @@ export default class extends Controller {
   createLoadingPlaceholder(tempId) {
     const div = document.createElement("div");
     div.id = `temp-${tempId}`;
-    div.className =
-      "photo-item relative w-[140px] h-[140px] bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center mb-4";
-    div.innerHTML = `<svg class="animate-spin h-6 w-6 text-blue-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`;
+    div.className = "kmm-photo-item";
+    div.innerHTML = `<svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg>`;
 
     // Neue Uploads kommen vorne hin
     this.previewListTarget.insertAdjacentElement("beforeend", div);
