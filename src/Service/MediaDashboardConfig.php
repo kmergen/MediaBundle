@@ -3,6 +3,8 @@
 namespace Kmergen\MediaBundle\Service;
 
 use Kmergen\MediaBundle\Service\ImageService;
+use Kmergen\MediaBundle\Interface\MediaAlbumOwnerInterface;
+
 use ReflectionClass;
 
 class MediaDashboardConfig
@@ -11,26 +13,30 @@ class MediaDashboardConfig
 
     public function build(object $entity, array $options = []): array
     {
-        $album = method_exists($entity, 'getMediaAlbum') ? $entity->getMediaAlbum() : null;
+        $context = $options['context'] ?? 'default';
+        $album = null;
 
-        // 1. FESTE DATEN (Darf nicht überschrieben werden)
-        $fixedData = [
-            'albumId'  => $album?->getId(),
-            'entityId' => method_exists($entity, 'getId') ? $entity->getId() : null,
-            'images'   => $this->mapMedia($album),
+        if ($entity instanceof MediaAlbumOwnerInterface) {
+            $album = $entity->getMediaAlbum($context);
+        }
+
+        // WICHTIG: Die Identität des Owners festlegen
+        $ownerData = [
+            'ownerClass' => (new ReflectionClass($entity))->getName(), // Voller Namespace für Doctrine
+            'ownerId'    => $entity->getId(), // Kann null sein bei 'new'
+            'context'    => $context,
+            'albumId'    => $album?->getId(),
+            'images'     => $this->mapMedia($album),
         ];
 
-        // 2. KONFIGURATION (Darf überschrieben werden)
         $configDefaults = [
-            'targetMediaDir' => 'images/' . strtolower((new ReflectionClass($entity))->getShortName()) . '/' . $entity->getId(),
-            'maxFiles'       => 20,
-            'autoSave'       => true,
-            'title'          => 'Medien verwalten',
-            'imageVariants'  => ['resize,900,0,80', 'crop,200,200,70'],
+            'maxFiles'      => 20,
+            'autoSave'      => true,
+            'title'         => 'Medien verwalten',
+            'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
         ];
 
-        $userConfig = array_merge($configDefaults, $options);
-        return array_merge($userConfig, $fixedData);
+        return array_merge($configDefaults, $options, $ownerData);
     }
 
     private function mapMedia($album): array

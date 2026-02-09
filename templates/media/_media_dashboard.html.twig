@@ -13,10 +13,12 @@
 {% endif %}
 <div class="kmm-dashboard-container"
      data-controller="media-upload"
+     data-media-upload-owner-class-value="{{ config.ownerClass }}"
+     data-media-upload-owner-id-value="{{ config.ownerId|default("") }}"
+     data-media-upload-context-value="{{ config.context }}"
      data-media-upload-upload-url-value="{{ path("kmergen_media_upload") }}"
      data-media-upload-reorder-url-value="{{ path("kmergen_media_reorder") }}"
      data-media-upload-delete-url-template-value="{{ path('kmergen_media_delete', {'id': 'ID_PLACEHOLDER'}) }}"
-     data-media-upload-target-media-dir-value="{{ config.targetMediaDir|default("images") }}"
      data-media-upload-initial-images-value="{{ initialImagesData|json_encode }}"
      data-media-upload-album-id-value="{{ config.albumId|default("") }}"
      data-media-upload-auto-save-value="{{ isAutoSave }}"

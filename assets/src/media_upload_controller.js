@@ -15,6 +15,9 @@ export default class extends Controller {
     albumId: { type: Number, default: null },
     tempKey: String,
     csrf: String,
+    ownerClass: String,
+    ownerId: String,
+    context: String,
 
     // Data
     initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
@@ -112,12 +115,17 @@ export default class extends Controller {
         if (this.hasAlbumIdValue) {
           formData.append("albumId", this.albumIdValue);
         }
-        if (this.hasTargetMediaDirValue) {
-          formData.append("targetMediaDir", this.targetMediaDirValue);
+
+        // NEU: Die Owner-Identifikationsdaten
+        formData.append("ownerClass", this.ownerClassValue);
+        formData.append("context", this.contextValue);
+
+        if (this.ownerIdValue) {
+          formData.append("ownerId", this.ownerIdValue);
         }
-        if (this.hasTempKeyValue && this.autoSaveValue) {
-          formData.append("tempKey", this.tempKeyValue);
-        }
+
+        formData.append("tempKey", this.tempKeyValue);
+
         if (this.hasImageVariantsValue) {
           this.imageVariantsValue.forEach((v, i) =>
             formData.append(`imageVariants[${i}]`, v),
