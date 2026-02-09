@@ -20,16 +20,35 @@ class MediaPersistenceService
         $this->publicDir = $kernel->getProjectDir() . '/public';
     }
 
+    public function finalize(MediaAlbum $album, ?string $mediaIds): void
+    {
+        $orderedIds = $mediaIds ? explode(',', $mediaIds) : [];
+        $medias = $album->getMedia();
+
+        foreach ($medias as $media) {
+            $id = (string)$media->getId();
+            if (in_array($id, $orderedIds)) {
+                // Bild behalten, permanent machen & Position setzen
+                $media->setTempKey(null);
+                $media->setPosition(array_search($id, $orderedIds));
+            } else {
+                // Bild wurde im UI entfernt -> Sofort löschen
+                $this->em->remove($media);
+            }
+        }
+        $this->em->flush();
+    }
+
     /**
      * Macht alle temporären Bilder eines Albums permanent.
      * Aufzurufen, nachdem das Haupt-Formular (z.B. Project) erfolgreich validiert wurde.
      */
     public function finalizeUploads(MediaAlbum $album): void
     {
-        $mediaCollection = $album->getMedia();
+        $medias = $album->getMedia();
         $needsFlush = false;
 
-        foreach ($mediaCollection as $media) {
+        foreach ($medias as $media) {
             // Wir suchen nur Bilder, die noch "temporär" sind
             if ($media->getTempKey() !== null) {
                 $media->setTempKey(null);
@@ -71,7 +90,7 @@ class MediaPersistenceService
             // Pfad rekonstruieren (Achtung: Logik muss zu deinem UploadService passen!)
             // Wenn url z.B. "uploads/projects/123/bild.jpg" ist:
             $filePath = $this->publicDir . DIRECTORY_SEPARATOR . ltrim($media->getUrl(), '/');
-            
+
             // Optional: Auch den Ordner löschen, wenn er leer ist? 
             // Hier löschen wir erstmal nur das File.
             if ($this->filesystem->exists($filePath)) {

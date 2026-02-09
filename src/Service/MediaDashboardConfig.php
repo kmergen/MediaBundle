@@ -20,23 +20,17 @@ class MediaDashboardConfig
             $album = $entity->getMediaAlbum($context);
         }
 
-        // WICHTIG: Die Identität des Owners festlegen
-        $ownerData = [
-            'ownerClass' => (new ReflectionClass($entity))->getName(), // Voller Namespace für Doctrine
-            'ownerId'    => $entity->getId(), // Kann null sein bei 'new'
-            'context'    => $context,
-            'albumId'    => $album?->getId(),
-            'images'     => $this->mapMedia($album),
-        ];
-
-        $configDefaults = [
+        return array_merge([
             'maxFiles'      => 20,
-            'autoSave'      => true,
+            'autoSave'      => false,
             'title'         => 'Medien verwalten',
             'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
-        ];
-
-        return array_merge($configDefaults, $options, $ownerData);
+            'tempKey'       => 'tmp_' . bin2hex(random_bytes(8)),
+        ], $options, [
+            'albumId' => $album?->getId(),
+            'context' => $context,
+            'images'  => $this->mapMedia($album),
+        ]);
     }
 
     private function mapMedia($album): array
@@ -52,6 +46,8 @@ class MediaDashboardConfig
                     'previewUrl' => '/' . ltrim($this->imageService->thumb($media->getUrl(), 'crop,150,150,80'), '/')
                 ];
             }
+        } else {
+            return [];
         }
         return $mapped;
     }

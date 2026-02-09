@@ -3,29 +3,27 @@ import { Controller } from "@hotwired/stimulus";
 import Sortable from "sortablejs";
 
 export default class extends Controller {
-  static targets = ["input", "previewList", "hiddenInput", "dropzone"];
+  uploadUrl = "/media/upload";
+  reorderUrl = "/media/reorder";
+  deleteUrlTemplate = "/media/ID_PLACEHOLDER";
+
+  static targets = [
+    "input",
+    "previewList",
+    "mediaIds",
+    "dropzone",
+    "albumId",
+    "tempKey",
+  ];
 
   static values = {
-    // URLs
-    uploadUrl: String,
-    reorderUrl: String,
-    deleteUrlTemplate: String,
-
-    // Context
-    albumId: { type: Number, default: null },
+    albumId: Number,
     tempKey: String,
     csrf: String,
-    ownerClass: String,
-    ownerId: String,
     context: String,
-
-    // Data
-    initialImages: { type: Array, default: [] }, // HIER kommen die Start-Bilder rein
-
-    // Config
-    autoSave: { type: Boolean, default: false },
-    maxFiles: { type: Number, default: 10 },
-    targetMediaDir: String,
+    initialImages: Array,
+    autoSave: Boolean,
+    type: Number,
     imageVariants: Array,
 
     // UI Texte (optional für Übersetzung)
@@ -112,19 +110,16 @@ export default class extends Controller {
         // 3. Upload senden
         const formData = new FormData();
         formData.append("file", compressedFile);
-        if (this.hasAlbumIdValue) {
+        formData.append("context", this.contextValue);
+        formData.append("autoSave", this.autoSaveValue ? "1" : "0");
+
+        if (!this.autoSaveValue) {
+          formData.append("tempKey", this.tempKeyValue);
+        }
+
+        if (this.hasAlbumIdValue && this.albumIdValue) {
           formData.append("albumId", this.albumIdValue);
         }
-
-        // NEU: Die Owner-Identifikationsdaten
-        formData.append("ownerClass", this.ownerClassValue);
-        formData.append("context", this.contextValue);
-
-        if (this.ownerIdValue) {
-          formData.append("ownerId", this.ownerIdValue);
-        }
-
-        formData.append("tempKey", this.tempKeyValue);
 
         if (this.hasImageVariantsValue) {
           this.imageVariantsValue.forEach((v, i) =>
@@ -132,7 +127,7 @@ export default class extends Controller {
           );
         }
 
-        const response = await fetch(this.uploadUrlValue, {
+        const response = await fetch(this.uploadUrl, {
           method: "POST",
           headers: { "X-Requested-With": "XMLHttpRequest" },
           body: formData,
@@ -144,31 +139,23 @@ export default class extends Controller {
         this.removePlaceholder(tempId);
 
         if (result.id) {
-          if (!this.albumIdValue && result.albumId) {
-            this.albumIdValue = result.albumId;
-            // Optional: Aktualisiere das data-attribute im DOM, falls nötig
+          if (result.albumId) {
+            this.albumIdValue = result.albumId; // Sync für nächsten Loop
+            if (this.hasAlbumIdTarget) {
+              this.albumIdTarget.value = result.albumId;
+            }
           }
-          // 5. Neues Element rendern (JSON -> HTML)
-          // Wir erwarten vom Server: { id: 123, url: '/pfad/zum/bild.jpg' }
-          this.addImageToDOM(result); // true = vorne anfügen
+          this.addImageToDOM(result);
           this.updateState();
-          if (result.id && this.autoSaveValue) {
-            // Da das neue Bild meist hinten angefügt wird oder die Reihenfolge ändert:
-            this.saveOrder();
-          }
-        } else {
-          alert("Upload fehlgeschlagen: " + (result.error || "Unbekannt"));
+          if (this.autoSaveValue) this.saveOrder();
         }
       } catch (err) {
         console.error("Upload Error:", err);
         this.removePlaceholder(tempId);
-        alert("Ein Fehler ist aufgetreten.");
       }
     }
     this.inputTarget.value = "";
   }
-
-  // --- Rendering (Der WP-Teil) ---
 
   /**
    * Baut das HTML für ein Bild und fügt es ein
@@ -241,14 +228,17 @@ export default class extends Controller {
 
   // Nur für Autosave Modus
   async saveOrder() {
-    if (!this.hasReorderUrlValue) return;
+    // IDs direkt aus den Daten-Attributen der Bilder im DOM lesen
+    const ids = Array.from(
+      this.previewListTarget.querySelectorAll(".kmm-photo-item"),
+    )
+      .map((el) => el.dataset.mediaId)
+      .filter(Boolean);
 
-    // IDs aus dem Hidden Input holen (der wird von updateState gefüllt)
-    // oder direkt aus dem DOM lesen
-    const ids = this.hiddenInputTarget.value.split(",").filter(Boolean);
+    if (ids.length === 0) return;
 
     try {
-      await fetch(this.reorderUrlValue, {
+      await fetch(this.reorderUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -256,20 +246,14 @@ export default class extends Controller {
         },
         body: JSON.stringify({ ids: ids }),
       });
-      console.log("Order saved");
     } catch (err) {
       console.error("Reorder failed", err);
-      // Optional: User benachrichtigen
     }
   }
 
   // Nur für Autosave Modus
   async deleteRemote(id) {
-    if (!this.hasDeleteUrlTemplateValue) return;
-
-    //  URL bauen: Template "/media/ID_PLACEHOLDER" -> "/media/123"
-    // Oder einfache String Concatenation, wenn die URL Struktur simple ist
-    const url = this.deleteUrlTemplateValue.replace("ID_PLACEHOLDER", id);
+    const url = this.deleteUrlTemplate.replace("ID_PLACEHOLDER", id);
 
     try {
       await fetch(url, {
@@ -302,8 +286,8 @@ export default class extends Controller {
       }
     });
 
-    if (this.hasHiddenInputTarget) {
-      this.hiddenInputTarget.value = ids.join(",");
+    if (this.hasMediaIdsTarget) {
+      this.mediaIdsTarget.value = ids.join(",");
     }
   }
 
