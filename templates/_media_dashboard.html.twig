@@ -7,7 +7,7 @@
      data-media-upload-album-id-value="{{ config.albumId }}"
      data-media-upload-auto-save-value="{{ config.autoSave ? 'true' : 'false' }}"
      data-media-upload-temp-key-value="{{ config.tempKey }}"
-     data-media-upload-image-variants-value="{{ config.imageVariants|default([]) |json_encode }}"
+     data-media-upload-image-variants-value="{{ config.imageVariants|json_encode }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
        <div data-media-upload-target="previewList"
             class="kmm-dashboard-preview-grid">{# JS füllt diesen Bereich basierend auf initial-images-value #}</div>

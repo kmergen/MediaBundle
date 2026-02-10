@@ -72,6 +72,7 @@ class MediaDashboardConfig
         }
 
         // FALL A: Wir haben eine explizite Sortierung vom Frontend (Validation Error Case)
+        // Hier wollen wir ALLE angeforderten Bilder sehen (auch die gerade hochgeladenen Temp-Bilder!)
         if ($sortedIds !== null) {
             foreach ($sortedIds as $id) {
                 if (isset($mediaById[$id])) {
@@ -80,9 +81,20 @@ class MediaDashboardConfig
                 }
             }
         }
-        // FALL B: Standard DB Reihenfolge (Initial Load oder AutoSave)
+        // FALL B: Standard DB Reihenfolge (Initial Load)
         else {
             foreach ($mediaCollection as $m) {
+                // --- ÄNDERUNG START ---
+
+                // Wenn wir die Seite frisch laden (kein Validation Error), 
+                // wollen wir KEINE temporären Dateien sehen, die evtl. noch als "Müll" im Album liegen.
+                // Nur Bilder anzeigen, die permanent gespeichert sind (tempKey === null).
+                if ($m->getTempKey() !== null) {
+                    continue;
+                }
+
+                // --- ÄNDERUNG ENDE ---
+
                 $mapped[] = $this->createMediaArray($m);
             }
         }

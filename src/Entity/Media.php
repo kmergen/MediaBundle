@@ -129,7 +129,7 @@ class Media
         return $this;
     }
 
-    public function tempKey(): ?string
+    public function getTempKey(): ?string
     {
         return $this->tempKey;
     }
