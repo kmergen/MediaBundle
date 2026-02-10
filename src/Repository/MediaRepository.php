@@ -17,6 +17,20 @@ class MediaRepository extends ServiceEntityRepository
   }
 
   /**
+   * Findet temporäre Medien, die älter als $date sind.
+   * @return iterable<Media>
+   */
+  public function findOldTempMedia(\DateTimeInterface $limitDate): iterable
+  {
+    return $this->createQueryBuilder('m')
+      ->where('m.tempKey IS NOT NULL')
+      ->andWhere('m.createdAt < :limit')
+      ->setParameter('limit', $limitDate)
+      ->getQuery()
+      ->toIterable(); // toIterable() ist speicherschonender bei vielen Datensätzen
+  }
+
+  /**
    * Holt alle Medien eines Albums.
    * Ersetzt getEntityMedia().
    */
