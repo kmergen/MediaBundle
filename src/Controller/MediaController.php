@@ -128,7 +128,7 @@ class MediaController extends AbstractController
 //         $media = $mediaRepository->find($id);
 
 //         // Render the media details into a Twig template
-//         return $this->render('@Media/media/edit.html.twig', [
+//         return $this->render('@Media/edit.html.twig', [
 //             'media' => $media,
 //         ]);
     // }
