@@ -4,8 +4,10 @@ namespace Kmergen\MediaBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Kmergen\MediaBundle\Repository\MediaRepository;
+use Doctrine\DBAL\Types\Types;
 
 #[ORM\Entity(repositoryClass: MediaRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Media
 {
     #[ORM\Id]
@@ -36,6 +38,9 @@ class Media
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $tempKey = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private ?\DateTimeInterface $createdAt = null;
 
     public function getId(): ?int
     {
@@ -134,5 +139,24 @@ class Media
         $this->tempKey = $tempKey;
 
         return $this;
+    }
+
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeInterface $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
+    {
+        if ($this->createdAt === null) {
+            $this->createdAt = new \DateTime();
+        }
     }
 }
