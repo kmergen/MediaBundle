@@ -20,22 +20,37 @@ class MediaPersistenceService
         $this->publicDir = $kernel->getProjectDir() . '/public';
     }
 
+    /**
+     * Finalisiert das Album:
+     * 1. Löscht Bilder, die im UI entfernt wurden (nicht in $mediaIds enthalten).
+     * 2. Entfernt den tempKey bei den verbleibenden Bildern (macht sie permanent).
+     * 3. Speichert die Sortierung basierend auf der Reihenfolge in $mediaIds.
+     */
     public function finalize(MediaAlbum $album, ?string $mediaIds): void
     {
+        // 1. IDs aus dem Request in ein Array umwandeln (z.B. ['5', '8', '6'])
         $orderedIds = $mediaIds ? explode(',', $mediaIds) : [];
-        $medias = $album->getMedia();
 
-        foreach ($medias as $media) {
-            $id = (string)$media->getId();
-            if (in_array($id, $orderedIds)) {
-                // Bild behalten, permanent machen & Position setzen
-                $media->setTempKey(null);
-                $media->setPosition(array_search($id, $orderedIds));
+        // 2. Alle aktuellen Bilder des Albums durchgehen
+        // Wir iterieren über eine Kopie (toArray), damit wir sicher entfernen können
+        foreach ($album->getMedia()->toArray() as $media) {
+            $id = (string) $media->getId();
+
+            // Ist das Bild in der Liste der zu speichernden IDs?
+            if (in_array($id, $orderedIds, true)) {
+                // JA: Behalten und finalisieren
+                $media->setTempKey(null); // Bild permanent machen
+
+                // Position setzen (Index im Array entspricht der Sortierung)
+                $position = array_search($id, $orderedIds, true);
+                $media->setPosition($position);
             } else {
-                // Bild wurde im UI entfernt -> Sofort löschen
+                // NEIN: Bild wurde im UI entfernt -> Löschen
                 $this->em->remove($media);
+                $album->removeMedium($media);
             }
         }
+
         $this->em->flush();
     }
 
@@ -43,23 +58,23 @@ class MediaPersistenceService
      * Macht alle temporären Bilder eines Albums permanent.
      * Aufzurufen, nachdem das Haupt-Formular (z.B. Project) erfolgreich validiert wurde.
      */
-    public function finalizeUploads(MediaAlbum $album): void
-    {
-        $medias = $album->getMedia();
-        $needsFlush = false;
+    // public function finalizeUploads(MediaAlbum $album): void
+    // {
+    //     $medias = $album->getMedia();
+    //     $needsFlush = false;
 
-        foreach ($medias as $media) {
-            // Wir suchen nur Bilder, die noch "temporär" sind
-            if ($media->getTempKey() !== null) {
-                $media->setTempKey(null);
-                $needsFlush = true;
-            }
-        }
+    //     foreach ($medias as $media) {
+    //         // Wir suchen nur Bilder, die noch "temporär" sind
+    //         if ($media->getTempKey() !== null) {
+    //             $media->setTempKey(null);
+    //             $needsFlush = true;
+    //         }
+    //     }
 
-        if ($needsFlush) {
-            $this->em->flush();
-        }
-    }
+    //     if ($needsFlush) {
+    //         $this->em->flush();
+    //     }
+    // }
 
     /**
      * Löscht alte, nicht gespeicherte Medien (für den Cronjob).
