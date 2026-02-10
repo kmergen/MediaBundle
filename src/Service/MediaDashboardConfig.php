@@ -15,7 +15,7 @@ class MediaDashboardConfig
         $context = $options['context'] ?? 'default';
         $album = null;
 
-        // 1. Album ermitteln (Entweder aus Entity oder explizit übergeben)
+        // 1. Album ermitteln
         if (isset($options['album'])) {
             $album = $options['album'];
         } elseif ($entity instanceof MediaAlbumOwnerInterface) {
@@ -24,32 +24,36 @@ class MediaDashboardConfig
 
         // 2. Sortier-Logik vorbereiten
         $sortedMediaIds = null;
-        // Wir prüfen mit array_key_exists, damit wir auch einen leeren String ("") abfangen
         if (array_key_exists('mediaIds', $options)) {
             $rawIds = (string) $options['mediaIds'];
-
-            if ($rawIds === '') {
-                // User hat alles gelöscht -> Leeres Array
-                $sortedMediaIds = [];
-            } else {
-                // User hat sortiert -> IDs parsen
-                $sortedMediaIds = explode(',', $rawIds);
-            }
+            $sortedMediaIds = ($rawIds === '') ? [] : explode(',', $rawIds);
         }
 
-        return array_merge([
+        // 3. Defaults definieren
+        $defaults = [
             'maxFiles'      => 20,
-            'autoSave'      => false,
+            'autoSave'      => false, // Hier ist der Standardwert
             'title'         => 'Medien verwalten',
             'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
-            // TempKey generieren wir nur, wenn keiner übergeben wurde
-            'tempKey'       => $options['tempKey'] ?? ($options['autoSave'] ? '' : uniqid('tmp_', true)),
-        ], $options, [
-            'albumId' => $album?->getId(),
-            'context' => $context,
-            // Hier übergeben wir jetzt das Album UND die Sortierung
-            'images'  => $this->mapMedia($album, $sortedMediaIds),
-        ]);
+        ];
+
+        // 4. User-Optionen mit Defaults mergen
+        // Jetzt ist $settings['autoSave'] garantiert vorhanden (entweder aus User-Input oder Default)
+        $settings = array_merge($defaults, $options);
+
+        // 5. TempKey Logik NACH dem Merge anwenden
+        if (!isset($settings['tempKey'])) {
+            // Wenn autoSave an ist, brauchen wir keinen TempKey (leerer String).
+            // Sonst generieren wir einen neuen.
+            $settings['tempKey'] = $settings['autoSave'] ? '' : uniqid('tmp_', true);
+        }
+
+        // 6. Restliche dynamische Werte hinzufügen
+        $settings['albumId'] = $album?->getId();
+        $settings['context'] = $context;
+        $settings['images']  = $this->mapMedia($album, $sortedMediaIds);
+
+        return $settings;
     }
 
     /**
