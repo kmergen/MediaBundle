@@ -1,6 +1,6 @@
 <?php
 
-namespace Kmergen\MediaBundle\Interface;
+namespace Kmergen\MediaBundle\Contract;
 
 use Kmergen\MediaBundle\Entity\MediaAlbum;
 
@@ -8,14 +8,13 @@ interface MediaAlbumOwnerInterface
 {
     /**
      * Gibt das Album für einen bestimmten Kontext zurück.
-     * Diese Interface muss in jeder Project Entiy implementiert werden,
-     * um das MediaBundle zu nutzen.
      * @param string $context z.B. 'main', 'gallery', 'documents'
      */
     public function getMediaAlbum(string $context = 'default'): ?MediaAlbum;
 
     /**
-     * Setzt das Album für einen bestimmten Kontext (wichtig für Upload/Erstellung).
+     * Setzt das Album für einen bestimmten Kontext.
+     * WICHTIG: Das ? erlaubt auch null, um ein Album zu entfernen (detachen).
      */
-    public function setMediaAlbum(MediaAlbum $album, string $context = 'default'): void;
+    public function setMediaAlbum(?MediaAlbum $album, string $context = 'default'): void;
 }

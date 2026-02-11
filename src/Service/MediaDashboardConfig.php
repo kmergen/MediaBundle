@@ -4,7 +4,7 @@
 namespace Kmergen\MediaBundle\Service;
 
 use Kmergen\MediaBundle\Entity\MediaAlbum;
-use Kmergen\MediaBundle\Interface\MediaAlbumOwnerInterface;
+use Kmergen\MediaBundle\Contract\MediaAlbumOwnerInterface;
 
 class MediaDashboardConfig
 {

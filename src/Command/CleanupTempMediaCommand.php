@@ -16,6 +16,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Kmergen\MediaBundle\Contract\MediaAlbumOwnerInterface;
 
 #[AsCommand(
     name: 'kmergen:media:cleanup-temp',
@@ -179,10 +180,9 @@ class CleanupTempMediaCommand extends Command
 
         return Command::SUCCESS;
     }
-
+    
     /**
-     * Sucht automatisch alle Tabellen und Spalten im gesamten Projekt,
-     * die eine Foreign Key Beziehung zum MediaAlbum haben.
+     * Sucht automatisch alle Tabellen von Entities, die MediaAlbumOwnerInterface implementieren.
      */
     private function getReferringTables(): array
     {
@@ -190,23 +190,25 @@ class CleanupTempMediaCommand extends Command
         $allMetadata = $this->em->getMetadataFactory()->getAllMetadata();
 
         foreach ($allMetadata as $classMetadata) {
-            // Die Media-Entity selbst überspringen wir (wird über media-count geprüft)
-            if ($classMetadata->getName() === Media::class) {
+            $className = $classMetadata->getName();
+
+            // 1. Interface-Check
+            // Das filtert automatisch 'Media', 'MediaAlbum' und alle unbeteiligten Entities raus,
+            // da diese das Interface nicht implementieren.
+            if (!in_array(MediaAlbumOwnerInterface::class, class_implements($className))) {
                 continue;
             }
 
-            // Wir prüfen alle Relationen dieser Entity
+            // 2. Nach der Relation suchen
             foreach ($classMetadata->getAssociationMappings() as $mapping) {
-
-                // Wenn das Ziel der Relation "MediaAlbum" ist...
+                // Wir suchen nach der Verbindung zum MediaAlbum
                 if ($mapping['targetEntity'] === MediaAlbum::class) {
 
-                    // ... und hier der Foreign Key liegt (Owning Side)
+                    // Wir brauchen die "Owning Side" (dort wo der Foreign Key in der DB liegt)
                     if (isset($mapping['joinColumns']) && !empty($mapping['joinColumns'])) {
-
                         $referringTables[] = [
                             'table' => $classMetadata->getTableName(),
-                            'column' => $mapping['joinColumns'][0]['name'] // z.B. media_album_id
+                            'column' => $mapping['joinColumns'][0]['name']
                         ];
                     }
                 }

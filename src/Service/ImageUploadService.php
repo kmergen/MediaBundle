@@ -8,7 +8,7 @@ use Kmergen\MediaBundle\Entity\MediaAlbum;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\KernelInterface;
-use Kmergen\MediaBundle\Interface\MediaAlbumOwnerInterface;
+use Kmergen\MediaBundle\Contract\MediaAlbumOwnerInterface;
 
 class ImageUploadService
 {
@@ -45,7 +45,7 @@ class ImageUploadService
         $media->setName($file->getClientOriginalName());
         $media->setMime($file->getClientMimeType());
         $media->setSize($file->getSize());
-        $media->setTempKey($autoSave ? null : $tempKey); 
+        $media->setTempKey($autoSave ? null : $tempKey);
         $media->setPosition($album->getMedia()->count());
 
         $this->em->persist($media);
