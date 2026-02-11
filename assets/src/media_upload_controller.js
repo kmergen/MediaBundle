@@ -172,11 +172,20 @@ export default class extends Controller {
 
     // Das HTML Template (Dein Premium Look)
     div.innerHTML = `
-            <!-- Layer 1: Hintergrund Blur -->
-            <img src="${url}" class="kmm-preview-bg-image">
+             <!-- 
+               VARIANTE NEU: Simple Cover (Das Bild füllt den Container komplett) 
+               Wichtig: Im CSS (oder Tailwind) braucht dieses IMG:
+               width: 100%; height: 100%; object-fit: cover;
+            -->
+            <img src="${url}" class="kmm-preview-image-cover" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
             
-            <!-- Layer 2: Bild Scharf -->
+            <!-- 
+               VARIANTE ALT: Background Blur (Auskommentiert)
+               Falls du zurück willst, den Teil oben löschen und das hier einkommentieren:
+            
+            <img src="${url}" class="kmm-preview-bg-image">
             <img src="${url}" class="kmm-preview-image" alt="Preview">
+            -->
             
             <!-- Badge Platzhalter (wird via JS gefüllt) -->
             <div class="badge-container"></div>
