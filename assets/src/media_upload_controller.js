@@ -177,7 +177,7 @@ export default class extends Controller {
                Wichtig: Im CSS (oder Tailwind) braucht dieses IMG:
                width: 100%; height: 100%; object-fit: cover;
             -->
-            <img src="${url}" class="kmm-preview-image-cover" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+            <img src="${url}" class="kmm-preview-image" alt="Preview">
             
             <!-- 
                VARIANTE ALT: Background Blur (Auskommentiert)
@@ -191,7 +191,7 @@ export default class extends Controller {
             <div class="badge-container"></div>
 
             <!-- Löschen Button -->
-            <button type="button" 
+              <button type="button" 
                     data-action="click->media-upload#removeImage"
                     class="kmm-delete-btn" 
                     title="Entfernen">
@@ -201,7 +201,7 @@ export default class extends Controller {
             </button>
             
             <!-- Optional: Edit Button (für Modal) -->
-            <button type="button" 
+               <button type="button" 
                     data-action="click->media-upload#edit"
                     data-media-id="${imageData.id}" 
                     class="kmm-edit-btn"

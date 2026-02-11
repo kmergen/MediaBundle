@@ -42,61 +42,67 @@
 
 
   /* ############### Preview Image Styles (find in assets/src/media_upload_controller.js) ############## */
+ .kmm-photo-item {
+    /* 1. Layout für Spinner (Zentrierung) */
+    @apply flex items-center justify-center;
 
-  .kmm-photo-item {
-    @apply flex items-center justify-center relative w-36 h-36 mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-white cursor-move select-none;
+    /* 2. Grundstyling des Containers */
+    @apply relative w-36 h-36 mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-gray-100 cursor-move select-none;
+
+    /* 3. HOVER EFFEKTE (Nesting) - Kein 'group' nötig! */
+    &:hover {
+      /* Buttons einblenden */
+      .kmm-delete-btn,
+      .kmm-edit-btn {
+        @apply opacity-100;
+      }
+      
+      /* Bild leicht zoomen */
+      .kmm-preview-image {
+        @apply scale-105;
+      }
+    }
   }
 
-  .kmm-preview-bg-image {
-    @apply absolute inset-0 w-full h-full object-cover blur-md opacity-60 scale-110 pointer-events-none z-0;
-  }
-
+  /* Das Bild selbst (Cover-Style, absolut über dem Spinner) */
   .kmm-preview-image {
-    @apply relative w-full h-full object-contain pointer-events-none z-10 drop-shadow-sm;
+    @apply absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-300;
   }
   
-  /* Speziell für die Buttons, die verschwinden */
+  /* --- Buttons (Standardmäßig unsichtbar opacity-0) --- */
   .kmm-delete-btn {
-    /* Position & Ebene */
     @apply absolute top-1 right-1 z-30 cursor-pointer;
-    
-    /* Form & Fix (size-7 entspricht ca. 28px, perfekt für Icons) */
     @apply size-6 rounded-full! flex items-center justify-center shadow-md;
-    
-    /* Farben & Animation */
     @apply bg-white text-red-600 transition-all opacity-0;
     @apply hover:bg-red-50;
   }
 
   .kmm-edit-btn {
-      /* Position & Ebene */
     @apply absolute top-1 right-8 z-30 cursor-pointer;
-    
-    /* Form & Fix (size-7 entspricht ca. 28px, perfekt für Icons) */
     @apply size-6 rounded-full! flex items-center justify-center shadow-md;
-    
-    /* Farben & Animation */
-    @apply bg-white text-red-600 transition-all opacity-0;
-    @apply hover:bg-red-50;
+    @apply bg-white text-blue-600 transition-all opacity-0;
+    @apply hover:bg-blue-50;
   }
 
   .kmm-delete-btn svg, .kmm-edit-btn svg {
     @apply w-4 h-4;
   }
 
+  /* --- Spinner --- */
   .kmm-placeholder-spin {
-    @apply animate-spin h-6 w-6 text-blue-500;
+    @apply text-blue-500 z-0; /* z-0 damit er unter dem Bild liegt */
+  }
+  
+  .kmm-placeholder-spin {
+    @apply animate-spin h-8 w-8 text-blue-500 z-0;
   }
 
+  /* --- Hauptbild Markierung --- */
   .kmm-main-image-border {
-    @apply ring-4 ring-blue-600 ring-offset-2;
+    @apply ring-4 ring-blue-600 ring-offset-2 ring-offset-white;
   }
 
   .kmm-main-image-badge {
     @apply absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm shadow-lg whitespace-nowrap;
-  }
-    
-  .kmm-photo-item:hover .kmm-delete-btn, .kmm-photo-item:hover .kmm-edit-btn {
-    @apply opacity-100;
   }
 }
