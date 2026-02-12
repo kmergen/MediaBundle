@@ -39,6 +39,19 @@
 @media (min-width: 1024px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(5, 1fr); } }
 @media (min-width: 1280px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(6, 1fr); } }
 
+
+/* 
+   3. DASHBOARD TITLE 
+*/
+.kmm-dashboard-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--kmm-text-color);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--kmm-border-color);
+    padding-bottom: 0.5rem;
+}
+
 /* 
    3. DROPZONE 
 */

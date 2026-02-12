@@ -6,6 +6,10 @@
     </header>
     <body>
       <!-- 1. BADGES & ALLGEMEINES -->
+      <trans-unit id="dashboard.title">
+        <source>dashboard.title</source>
+        <target>Medien verwalten</target>
+      </trans-unit>
       <trans-unit id="dashboard.badge_main">
         <source>dashboard.badge_main</source>
         <target>Hauptbild</target>

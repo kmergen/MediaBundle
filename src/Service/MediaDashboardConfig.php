@@ -39,7 +39,7 @@ class MediaDashboardConfig
             'maxFileSize'   => 10, // Neu: Standard 10 MB
             'allowedMimeTypes'  => ['image/jpeg', 'image/png', 'image/webp'], // Erlaubte MIME-Types
             'autoSave'      => false, // Hier ist der Standardwert
-            'title'         => 'Medien verwalten',
+            'title' => $this->translator->trans('dashboard.title', [], 'KmMedia'),
             'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
             // Null bedeutet: Standardverhalten (Nur aktuelle User-Sprache)
             'editableAltTextLocales' => null,

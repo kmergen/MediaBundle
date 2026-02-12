@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="de" target-language="en" datatype="plaintext" original="file.ext">
+        <header>
+            <tool tool-id="symfony" tool-name="Symfony" />
+        </header>
+        <body>
+            <!-- 1. BADGES & GENERAL -->
+            <trans-unit id="dashboard.title">
+                <source>dashboard.title</source>
+                <target>Manage Media</target>
+            </trans-unit>
+            <trans-unit id="dashboard.badge_main">
+                <source>dashboard.badge_main</source>
+                <target>Main image</target>
+            </trans-unit>
+            <trans-unit id="dashboard.delete_confirm">
+                <source>dashboard.delete_confirm</source>
+                <target>Are you sure you want to remove this image?</target>
+            </trans-unit>
+            <trans-unit id="dashboard.loading">
+                <source>dashboard.loading</source>
+                <target>Loading...</target>
+            </trans-unit>
+
+            <!-- 2. ERROR MESSAGES (ICU Syntax) -->
+            <trans-unit id="dashboard.error.max_files">
+                <source>dashboard.error.max_files</source>
+                <target>{count, plural, =1 {Limit reached: Maximum of one file allowed.} other
+                    {Limit reached: Maximum of # files allowed.}}</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_size">
+                <source>dashboard.error.file_size</source>
+                <target>File "{name}" is too large ({size} MB). Max {limit} MB allowed.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_type">
+                <source>dashboard.error.file_type</source>
+                <target>File type "{type}" is not allowed.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.upload_failed">
+                <source>dashboard.error.upload_failed</source>
+                <target>Error uploading {name}</target>
+            </trans-unit>
+
+            <!-- 3. DASHBOARD UI -->
+            <trans-unit id="dashboard.dropzone_help">
+                <source>dashboard.dropzone_help</source>
+                <target>Drop images here or click to upload</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal_edit_title">
+                <source>dashboard.modal_edit_title</source>
+                <target>Edit medium</target>
+            </trans-unit>
+
+            <!-- 4. EDIT FORM -->
+            <trans-unit id="form.media_edit.label">
+                <source>form.media_edit.label</source>
+                <target>Description ({locale})</target>
+            </trans-unit>
+            <trans-unit id="form.media_edit.placeholder">
+                <source>form.media_edit.placeholder</source>
+                <target>Describe the content of the image...</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.preview_alt">
+                <source>dashboard.modal.preview_alt</source>
+                <target>Preview</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.help_text">
+                <source>dashboard.modal.help_text</source>
+                <target>Important for search engines (SEO) and screen readers.</target>
+            </trans-unit>
+
+            <!-- 5. BUTTONS -->
+            <trans-unit id="dashboard.buttons.cancel">
+                <source>dashboard.buttons.cancel</source>
+                <target>Cancel</target>
+            </trans-unit>
+            <trans-unit id="dashboard.buttons.save">
+                <source>dashboard.buttons.save</source>
+                <target>Save</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
