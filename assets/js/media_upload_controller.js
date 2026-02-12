@@ -131,7 +131,7 @@ export default class extends Controller {
   // --- Core Logic: Validation & Upload ---
 
   /**
-   * Validiert MIME-Type und Dateigröße
+   * Validiert eine einzelne Datei (ICU Syntax: {name}, {type}, etc.)
    */
   validateFile(file) {
     const t = this.translationsValue || {};
@@ -144,7 +144,7 @@ export default class extends Controller {
       if (!this.allowedMimeTypesValue.includes(file.type)) {
         const typeToShow = file.type || "Unbekannt";
         const msg = t.errorFileType
-          ? t.errorFileType.replace("%type%", typeToShow)
+          ? t.errorFileType.replace("{type}", typeToShow)
           : `Dateityp ${typeToShow} ist nicht erlaubt.`;
         this.showError(msg);
         return false;
@@ -157,9 +157,9 @@ export default class extends Controller {
       if (sizeInMb > this.maxFileSizeValue) {
         const msg = t.errorFileSize
           ? t.errorFileSize
-              .replace("%name%", file.name)
-              .replace("%size%", sizeInMb.toFixed(1))
-              .replace("%limit%", this.maxFileSizeValue)
+              .replace("{name}", file.name)
+              .replace("{size}", sizeInMb.toFixed(1))
+              .replace("{limit}", this.maxFileSizeValue)
           : `Datei "${file.name}" ist zu groß`;
         this.showError(msg);
         return false;
@@ -169,13 +169,14 @@ export default class extends Controller {
   }
 
   /**
-   * Haupt-Loop für Uploads
+   * Hauptmethode für den Datei-Upload
    */
   async handleFiles(files) {
     const fileArray = Array.from(files);
     const t = this.translationsValue || {};
 
     // 1. Batch-Validierung: Maximale Anzahl Bilder
+    // (Hinweis: t.errorMaxFiles kommt vom Server bereits fertig mit der Zahl drin!)
     const currentCount =
       this.previewListTarget.querySelectorAll(".kmm-photo-item").length;
     if (
@@ -189,9 +190,9 @@ export default class extends Controller {
       return;
     }
 
-    // 2. Einzelverarbeitung der Dateien
+    // 2. Einzelverarbeitung
     for (const file of fileArray) {
-      // Client-Side Validation (kein Platzhalter wenn ungültig)
+      // Validierung (Mime/Size) - Platzhalter wird erst danach erstellt
       if (!this.validateFile(file)) continue;
 
       const tempId = Math.random().toString(36).substring(7);
@@ -238,15 +239,16 @@ export default class extends Controller {
       } catch (err) {
         console.error("Upload Error:", err);
         this.removePlaceholder(tempId);
+
+        // Fehler-Message mit ICU Syntax Ersetzung {name}
         const errorMsg = t.errorUpload
-          ? t.errorUpload.replace("%name%", file.name)
-          : `Fehler: ${file.name}`;
+          ? t.errorUpload.replace("{name}", file.name)
+          : `Fehler beim Upload von ${file.name}`;
         this.showError(errorMsg);
       }
     }
     this.inputTarget.value = "";
   }
-
   // --- DOM Manipulation ---
 
   addImageToDOM(imageData, prepend = false) {

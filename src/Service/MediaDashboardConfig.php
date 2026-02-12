@@ -35,8 +35,8 @@ class MediaDashboardConfig
 
         // 3. Defaults definieren
         $defaults = [
-            'maxFiles'      => 10,
-            'maxFileSize'   => 50, // Neu: Standard 10 MB
+            'maxFiles'      => 2,
+            'maxFileSize'   => 10, // Neu: Standard 10 MB
             'allowedMimeTypes'  => ['image/jpeg', 'image/png', 'image/webp'], // Erlaubte MIME-Types
             'autoSave'      => false, // Hier ist der Standardwert
             'title'         => 'Medien verwalten',
@@ -72,7 +72,11 @@ class MediaDashboardConfig
         $settings['translations'] = [
             'badgeText'     => $this->translator->trans('dashboard.badge_main', [], 'KmMedia'),
             'confirmDelete' => $this->translator->trans('dashboard.delete_confirm', [], 'KmMedia'),
-             'errorMaxFiles' => $this->translator->trans('dashboard.error.max_files', ['%count%' => $settings['maxFiles']], 'KmMedia'),
+            'errorMaxFiles' => $this->translator->trans(
+                'dashboard.error.max_files',
+                ['count' => (int) $settings['maxFiles']], // Hier das (int) hinzufügen
+                'KmMedia'
+            ),
             'errorFileSize' => $this->translator->trans('dashboard.error.file_size', [], 'KmMedia'), // Platzhalter werden im JS ersetzt
             'errorFileType' => $this->translator->trans('dashboard.error.file_type', [], 'KmMedia'),
             'btnCancel'     => $this->translator->trans('dashboard.buttons.cancel', [], 'KmMedia'),

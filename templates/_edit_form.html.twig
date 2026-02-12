@@ -23,7 +23,8 @@
             <div class="kmm-form-group">
                 {# Label mit Ersetzung des Platzhalters %locale% durch z.B. DE, EN #}
                 <label class="kmm-form-label" for="{{ field.vars.id }}">
-                    {{ field.vars.label|trans({'%locale%': locale|upper}, 'KmMedia') }}
+                    {# 'locale' statt '%locale%' #}
+                    {{ field.vars.label|trans({'locale': locale|upper}, 'KmMedia') }}
                 </label>
 
                 {{ form_widget(field, {
