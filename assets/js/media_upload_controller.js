@@ -6,6 +6,7 @@ export default class extends Controller {
   uploadUrl = "/media/upload";
   reorderUrl = "/media/reorder";
   deleteUrlTemplate = "/media/ID_PLACEHOLDER";
+  editUrlTemplate = "/media/ID_PLACEHOLDER/edit";
 
   static targets = [
     "input",
@@ -14,6 +15,8 @@ export default class extends Controller {
     "dropzone",
     "albumId",
     "tempKey",
+    "modal",
+    "modalContent",
   ];
 
   static values = {
@@ -25,14 +28,48 @@ export default class extends Controller {
     autoSave: Boolean,
     type: Number,
     imageVariants: Array,
+    editableAltTextLocales: String, 
 
     // UI Texte (optional für Übersetzung)
     badgeText: { type: String, default: "Hauptbild" },
   };
 
+  _modal = null;
+  _modal_content = null;
+
   connect() {
     this.initSortable();
     this.renderInitialImages();
+
+    if (this.hasModalTarget) {
+      this._modal = this.modalTarget;
+      this._modalContent = this.modalContentTarget;
+
+      // 1. Modal Teleport (ans Ende vom Body)
+      document.body.appendChild(this._modal);
+
+      // 2. Listener für das FORMULAR (Submit)
+      this.boundSubmitEdit = this.submitEdit.bind(this);
+      this._modalContent.addEventListener("submit", this.boundSubmitEdit);
+
+      // 3. NEU: Listener für KLICKS (Schließen / Abbrechen / Backdrop)
+      // Wir binden eine Funktion, die alle Klicks im Modal überwacht
+      this.boundHandleModalClick = this.handleModalClick.bind(this);
+      this._modal.addEventListener("click", this.boundHandleModalClick);
+    }
+  }
+
+  disconnect() {
+    if (this._modal) {
+      // Listener sauber entfernen
+      if (this.boundSubmitEdit) {
+        this._modalContent.removeEventListener("submit", this.boundSubmitEdit);
+      }
+      if (this.boundHandleModalClick) {
+        this._modal.removeEventListener("click", this.boundHandleModalClick);
+      }
+      this._modal.remove();
+    }
   }
 
   initSortable() {
@@ -380,4 +417,248 @@ export default class extends Controller {
       };
     });
   }
+
+  // ####################################################################
+  // ####################  EDIT / MODAL LOGIC  ##########################
+  // ####################################################################
+  // media_upload_controller.js
+
+  async edit(event) {
+    event.preventDefault();
+    const button = event.currentTarget;
+    const mediaId = button.dataset.mediaId;
+
+    if (!mediaId) return;
+
+    // 1. Basis URL (z.B. /media/95/edit)
+    let url = this.editUrlTemplate.replace("ID_PLACEHOLDER", mediaId);
+
+    // 2. Parameter vorbereiten (Cache-Buster + Locales)
+    const params = new URLSearchParams();
+    
+    // Cache Buster (gegen das Browser-Caching Problem)
+    params.append('t', Date.now());
+
+    // NEU: Locales anhängen, falls im Dashboard konfiguriert
+    // (z.B. wird daraus &locales=de,en)
+    if (this.editableAltTextLocalesValue) {
+        params.append('locales', this.editableAltTextLocalesValue);
+    }
+
+    // URL final zusammensetzen
+    url += "?" + params.toString();
+
+    // 3. UI: Modal öffnen und Spinner anzeigen
+    this._modal.classList.remove("kmm-hidden");
+    
+    // Spinner (aus deinem CSS/SVG)
+    this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
+
+    try {
+      // 4. Fetch Request (GET)
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-cache", // Zwingt den Browser, den Server zu fragen
+      });
+
+      if (!response.ok) throw new Error("Fehler beim Laden");
+
+      const html = await response.text();
+
+      // 5. HTML einfügen
+      // Der EventListener (submit), den wir in connect() an _modalContent gehängt haben,
+      // greift hier automatisch für das neue Formular.
+      this._modalContent.innerHTML = html;
+
+      // 6. Fokus setzen (Usability)
+      const input = this._modalContent.querySelector("input:not([type='hidden'])");
+      if (input) input.focus();
+
+    } catch (error) {
+      console.error(error);
+      this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;
+    }
+  }async edit(event) {
+    event.preventDefault();
+    const button = event.currentTarget;
+    const mediaId = button.dataset.mediaId;
+
+    if (!mediaId) return;
+
+    // 1. Basis URL (z.B. /media/95/edit)
+    let url = this.editUrlTemplate.replace("ID_PLACEHOLDER", mediaId);
+
+    // 2. Parameter vorbereiten (Cache-Buster + Locales)
+    const params = new URLSearchParams();
+    
+    // Cache Buster (gegen das Browser-Caching Problem)
+    params.append('t', Date.now());
+
+    // NEU: Locales anhängen, falls im Dashboard konfiguriert
+    // (z.B. wird daraus &locales=de,en)
+    if (this.editableAltTextLocalesValue) {
+        params.append('locales', this.editableAltTextLocalesValue);
+    }
+
+    // URL final zusammensetzen
+    url += "?" + params.toString();
+
+    // 3. UI: Modal öffnen und Spinner anzeigen
+    this._modal.classList.remove("kmm-hidden");
+    
+    // Spinner (aus deinem CSS/SVG)
+    this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
+
+    try {
+      // 4. Fetch Request (GET)
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-cache", // Zwingt den Browser, den Server zu fragen
+      });
+
+      if (!response.ok) throw new Error("Fehler beim Laden");
+
+      const html = await response.text();
+
+      // 5. HTML einfügen
+      // Der EventListener (submit), den wir in connect() an _modalContent gehängt haben,
+      // greift hier automatisch für das neue Formular.
+      this._modalContent.innerHTML = html;
+
+      // 6. Fokus setzen (Usability)
+      const input = this._modalContent.querySelector("input:not([type='hidden'])");
+      if (input) input.focus();
+
+    } catch (error) {
+      console.error(error);
+      this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;
+    }
+  }
+
+  // --- SUBMIT LOGIC (Bleibt gleich, wird aber jetzt garantiert aufgerufen) ---
+  async submitEdit(event) {
+    // 1. Browser stoppen (Kein Redirect, Kein JSON im Fenster!)
+    event.preventDefault();
+    event.stopPropagation();
+
+    const form = event.target;
+
+    // Button Feedback
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerHTML : "";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Speichern...";
+    }
+
+    try {
+      const response = await fetch(form.action, {
+        method: form.method,
+        body: new FormData(form),
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+
+      const contentType = response.headers.get("content-type");
+
+      // SUCCESS: JSON
+      if (
+        response.ok &&
+        contentType &&
+        contentType.includes("application/json")
+      ) {
+        const data = await response.json();
+
+        // Update DOM & Modal schließen
+        this.updateItemInDOM(data);
+        this.closeModal();
+      }
+      // ERROR: HTML (Formular Validierungsfehler)
+      else {
+        const html = await response.text();
+        this._modalContent.innerHTML = html;
+        // Der Listener aus connect() bleibt aktiv, also funktioniert der nächste Versuch auch!
+      }
+    } catch (error) {
+      console.error("Save failed", error);
+      if (submitBtn) submitBtn.innerText = "Fehler";
+    } finally {
+      // Button Reset
+      if (
+        submitBtn &&
+        !this._modal.classList.contains("kmm-hidden") &&
+        !submitBtn.innerText.includes("Fehler")
+      ) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+    }
+  }
+
+  updateItemInDOM(data) {
+    if (!data.id) return;
+    // Wir suchen das Item in der previewListTarget (die ist NICHT teleportiert, also finden wir sie)
+    const item = this.previewListTarget.querySelector(
+      `.kmm-photo-item[data-media-id="${data.id}"]`,
+    );
+    if (!item) return;
+
+    const img = item.querySelector(".kmm-preview-image");
+    if (img && data.alt !== undefined) {
+      img.alt = data.alt;
+    }
+
+    // Feedback
+    item.style.transition = "box-shadow 0.3s";
+    item.style.boxShadow = "0 0 0 4px #22c55e";
+    setTimeout(() => {
+      item.style.boxShadow = "";
+    }, 1000);
+  }
+
+  handleModalClick(event) {
+    // Wir prüfen: Wurde etwas geklickt, das schließen soll?
+
+    // 1. Prüfen auf data-action="...closeModal" (X-Button & Abbrechen-Button)
+    // .closest() sucht vom geklickten Element nach oben (wichtig beim SVG Icon im Button)
+    const closeTrigger = event.target.closest('[data-action*="closeModal"]');
+
+    // 2. Prüfen auf Backdrop (Klick neben das Modal)
+    const isBackdrop = event.target.classList.contains("kmm-modal-backdrop");
+
+    if (closeTrigger || isBackdrop) {
+      this.closeModal(event);
+    }
+  }
+
+  // --- SCHLIEẞEN LOGIK ---
+  closeModal(event) {
+    if (event) event.preventDefault();
+
+    if (this._modal) {
+      // Modal verstecken
+      this._modal.classList.add("kmm-hidden");
+      // Inhalt leeren (spart Speicher und verhindert ID-Konflikte)
+      this._modalContent.innerHTML = "";
+    }
+  }
+
+  // B. Badge Logik (Beispiel: Wenn Alt Text da ist, zeige Badge)
+  // Da dein Template String in JS ist, musst du schauen, ob du dort eine Klasse/Element dafür vorgesehen hast.
+  // Wenn nicht, kannst du es hier via JS injecten.
+
+  /* Beispiel:
+        let badge = item.querySelector('.kmm-alt-badge');
+        if (data.alt && !badge) {
+            // Badge erstellen wenn noch nicht da
+            badge = document.createElement('span');
+            badge.className = 'kmm-alt-badge'; // CSS Klasse aus media.css
+            badge.innerText = 'ALT';
+            item.appendChild(badge);
+        } else if (!data.alt && badge) {
+            // Badge entfernen wenn Alt-Text gelöscht wurde
+            badge.remove();
+        }
+        */
 }

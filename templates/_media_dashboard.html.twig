@@ -8,6 +8,7 @@
      data-media-upload-auto-save-value="{{ config.autoSave ? 'true' : 'false' }}"
      data-media-upload-temp-key-value="{{ config.tempKey }}"
      data-media-upload-image-variants-value="{{ config.imageVariants|json_encode }}"
+     data-media-upload-editable-alt-text-locales-value="{{ config.editableAltTextLocales ? config.editableAltTextLocales|join(",") : '' }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
        <div data-media-upload-target="previewList"
             class="kmm-dashboard-preview-grid">{# JS füllt diesen Bereich basierend auf initial-images-value #}</div>
@@ -51,4 +52,8 @@
               data-media-upload-target="tempKey"
               name="mediaTempKey"
               value="{{ config.tempKey }}">
+
+       {# ... Modal für edit action ... #}
+       {% include '@Media/_media_modal.html.twig' %}
+
 </div>

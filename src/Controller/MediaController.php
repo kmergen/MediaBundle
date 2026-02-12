@@ -5,6 +5,7 @@ namespace Kmergen\MediaBundle\Controller;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Kmergen\MediaBundle\Entity\Media;
+use Kmergen\MediaBundle\Form\MediaEditType;
 use Kmergen\MediaBundle\Repository\MediaRepository;
 use Kmergen\MediaBundle\Service\ImageService;
 use Kmergen\MediaBundle\Service\ImageUploadService;
@@ -96,7 +97,7 @@ class MediaController extends AbstractController
     public function delete(
         Media $media,
         Request $request,
-        MediaDeleteService $mediaDeleteService
+        MediaDeleteService $mediaDeleteService,
     ): Response {
         // CSRF Check
         // 1. Token aus dem Header holen
@@ -115,20 +116,95 @@ class MediaController extends AbstractController
 
         return $this->json(['status' => 'success']);
     }
-}
 
-//  #[Route('/media/{id}/edit', name: 'kmergen_media_edit', methods: ['POST'])]
-//     public function edit(
-//         int $id,
-//         Request $request,
-//         MediaRepository $mediaRepository,
-//         EntityManagerInterface $em
-//     ): Response {
-//         // Fetch the media entity using the repository
-//         $media = $mediaRepository->find($id);
+    #[Route('/media/{id}/edit', name: 'media_edit', methods: ['GET', 'POST'])]
+    public function edit(
+        Request $request,
+        Media $media,
+        EntityManagerInterface $em,
+        ImageService $imageService
+    ): Response {
 
-//         // Render the media details into a Twig template
-//         return $this->render('@Media/edit.html.twig', [
-//             'media' => $media,
-//         ]);
+        // 1. Locales auslesen
+        $localesParam = $request->query->get('locales');
+
+        if ($localesParam) {
+            $editableLocales = explode(',', $localesParam);
+        } else {
+            $editableLocales = [$request->getLocale()];
+        }
+
+        // 2. Formular erstellen
+        $form = $this->createForm(MediaEditType::class, $media, [
+            // --- HIER IST DER FIX ---
+            // Wir müssen die 'locales' auch in die Action-URL schreiben,
+            // damit sie beim POST-Request wieder da sind!
+            'action' => $this->generateUrl('media_edit', [
+                'id' => $media->getId(),
+                'locales' => $localesParam // <--- Das fehlte!
+            ]),
+
+            'current_locale' => $request->getLocale(),
+            'locales' => $editableLocales,
+        ]);
+
+        $form->handleRequest($request);
+
+        // --- POST REQUEST (Speichern) ---
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->flush();
+
+            return $this->json([
+                'status' => 'success',
+                'id' => $media->getId(),
+                // Wir geben den Text für die aktuelle Sprache zurück für die Vorschau
+                'alt' => $media->getAlt($request->getLocale()),
+            ]);
+        }
+
+        // --- Thumbnail Logik für das Modal ---
+        // Fallback auf Original-URL, falls Thumb-Generierung fehlschlägt
+        $previewUrl = $media->getUrl();
+        try {
+            $thumbUrl = $imageService->thumb($media->getUrl(), 'resize_800x600', true);
+            if ($thumbUrl) {
+                $previewUrl = $thumbUrl;
+            }
+        } catch (\Exception $e) {
+            // Logging könnte hier sinnvoll sein, aber Fallback reicht für UI
+        }
+
+        // --- Fehlerhafte Validierung (Status 422) ---
+        $response = null;
+        if ($form->isSubmitted() && !$form->isValid()) {
+            $response = new Response();
+            $response->setStatusCode(422);
+        }
+
+        // --- HTML Rendern ---
+        return $this->render('@Media/_edit_form.html.twig', [
+            'form' => $form,
+            'media' => $media,
+            'previewUrl' => $previewUrl,
+            // WICHTIG: Locales an Template übergeben für die Schleife
+            'locales' => $editableLocales
+        ], $response);
+    }
+
+    //  #[Route('/media/{id}/edit', name: 'kmergen_media_edit', methods: ['POST'])]
+    //     public function edit(
+    //         int $id,
+    //         Request $request,
+    //         MediaRepository $mediaRepository,
+    //         EntityManagerInterface $em
+    //     ): Response {
+    //         // Fetch the media entity using the repository
+    //         $media = $mediaRepository->find($id);
+
+    //         // Render the media details into a Twig template
+    //         return $this->render('@Media/edit.html.twig', [
+    //             'media' => $media,
+    //         ]);
     // }
+
+}

@@ -42,6 +42,9 @@ class Media
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $alt = []; // Nullable ?array erlaubt, aber Init als []
+
     public function getId(): ?int
     {
         return $this->id;
@@ -55,7 +58,6 @@ class Media
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -67,7 +69,6 @@ class Media
     public function setUrl(string $url): static
     {
         $this->url = $url;
-
         return $this;
     }
 
@@ -79,7 +80,6 @@ class Media
     public function setMime(string $mime): static
     {
         $this->mime = $mime;
-
         return $this;
     }
 
@@ -91,7 +91,6 @@ class Media
     public function setSize(int $size): static
     {
         $this->size = $size;
-
         return $this;
     }
 
@@ -113,7 +112,6 @@ class Media
     public function setDimension(?string $dimension): static
     {
         $this->dimension = $dimension;
-
         return $this;
     }
 
@@ -125,7 +123,6 @@ class Media
     public function setAlbum(?MediaAlbum $album): static
     {
         $this->album = $album;
-
         return $this;
     }
 
@@ -137,7 +134,6 @@ class Media
     public function setTempKey(?string $tempKey): static
     {
         $this->tempKey = $tempKey;
-
         return $this;
     }
 
@@ -158,5 +154,50 @@ class Media
         if ($this->createdAt === null) {
             $this->createdAt = new \DateTime();
         }
+    }
+
+    // --- ALT TEXT LOGIK ---
+
+    /**
+     * Getter:
+     * - Ohne Parameter: Gibt Array zurück
+     * - Mit Locale: Gibt String zurück (oder null)
+     */
+    public function getAlt(?string $locale = null): string|array|null
+    {
+        if ($this->alt === null) {
+            return $locale ? null : [];
+        }
+
+        if ($locale) {
+            return $this->alt[$locale] ?? null;
+        }
+        return $this->alt;
+    }
+
+    /**
+     * Standard Setter (Doctrine)
+     */
+    public function setAlt(?array $alt): self
+    {
+        $this->alt = $alt ?? [];
+        return $this;
+    }
+
+    /**
+     * Helper: Setzt einen einzelnen Wert für eine Sprache.
+     * Wird vom FormType aufgerufen.
+     */
+    public function setAltForLocale(string $locale, ?string $value): self
+    {
+        // Sicherheit: Array initialisieren falls null
+        $this->alt ??= [];
+
+        if (empty($value)) {
+            unset($this->alt[$locale]);
+        } else {
+            $this->alt[$locale] = $value;
+        }
+        return $this;
     }
 }

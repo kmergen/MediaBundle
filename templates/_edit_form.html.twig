@@ -1,0 +1,57 @@
+{# templates/media/_edit_form.html.twig #}
+
+{{ form_start(form, {
+    'attr': {
+    'class': 'kmm-form-stack',
+    'data-turbo': 'false'
+    }
+    }) }}
+
+    {# VORSCHAU #}
+    <div class="kmm-modal-preview-box">
+        <img src="{{ asset(previewUrl) }}"
+             alt="Vorschau"
+             class="kmm-modal-preview-img">
+    </div>
+
+    {# DYNAMISCHE FELDER (Loop) #}
+    <div class="kmm-form-stack">
+        {% for locale in locales %}
+
+            {% set fieldName = 'alt_' ~ locale %}
+            {% set field = attribute(form, fieldName) %}
+
+            <div class="kmm-form-group">
+                <label class="kmm-form-label" for="{{ field.vars.id }}">{{ field.vars.label }}</label>
+
+                {#
+                   WICHTIG: Value erzwingen! 
+                   Wir rufen media.getAlt(locale) auf.
+                #}
+                {{ form_widget(field, {
+                                'value': media.getAlt(locale) ,
+                'attr': {
+                'class': 'kmm-form-input'
+                }
+                }) }}
+
+                {{ form_errors(field) }}
+            </div>
+
+        {% endfor %}
+
+        <p class="kmm-form-help mt-2">Wichtig für Suchmaschinen (SEO) und Screenreader.</p>
+    </div>
+
+    {# Globale Fehler #}
+    {{ form_errors(form) }}
+
+    {# BUTTONS #}
+    <div class="kmm-modal-actions">
+        <button type="button"
+                class="kmm-btn-cancel"
+                data-action="click->media-upload#closeModal">Abbrechen</button>
+        <button type="submit" class="kmm-btn-save">Speichern</button>
+    </div>
+
+{{ form_end(form) }}

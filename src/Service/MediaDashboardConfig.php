@@ -35,20 +35,29 @@ class MediaDashboardConfig
             'autoSave'      => false, // Hier ist der Standardwert
             'title'         => 'Medien verwalten',
             'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
+            // Null bedeutet: Standardverhalten (Nur aktuelle User-Sprache)
+            'editableAltTextLocales' => null,
         ];
 
         // 4. User-Optionen mit Defaults mergen
         // Jetzt ist $settings['autoSave'] garantiert vorhanden (entweder aus User-Input oder Default)
         $settings = array_merge($defaults, $options);
 
-        // 5. TempKey Logik NACH dem Merge anwenden
+        // 5. Falls der User 'de,en' als String übergeben hat, machen wir ein Array daraus.
+        if (isset($settings['editableAltTextLocales']) && is_string($settings['editableAltTextLocales'])) {
+            // Wir unterstützen Komma-getrennte Strings
+            $settings['editableAltTextLocales'] = explode(',', $settings['editableAltTextLocales']);
+        }
+
+
+        // 6. TempKey Logik NACH dem Merge anwenden
         if (!isset($settings['tempKey'])) {
             // Wenn autoSave an ist, brauchen wir keinen TempKey (leerer String).
             // Sonst generieren wir einen neuen.
             $settings['tempKey'] = $settings['autoSave'] ? '' : uniqid('tmp_', true);
         }
 
-        // 6. Restliche dynamische Werte hinzufügen
+        // 7. Restliche dynamische Werte hinzufügen
         $settings['albumId'] = $album?->getId();
         $settings['context'] = $context;
         $settings['images']  = $this->mapMedia($album, $sortedMediaIds);

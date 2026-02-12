@@ -1,108 +1,370 @@
 /* media-bundle/assets/css/media.css */
-@layer components {
-  /* ############### Media Dashboard Styles (find in templates/media_dashboard.html.twig) ############## */
-  
-  .kmm-dashboard-container {
-    @apply w-full
-  }
-  
-  .kmm-dashboard-preview-grid {
-    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-6
-  }
 
-  .kmm-dashboard-dropzone {
-  @apply w-full border-2 border-dashed border-gray-300 rounded-lg p-10 text-center cursor-pointer transition-colors bg-white;
+/* 
+   1. KONFIGURATION (Variablen)
+   Das hier ist deine API für das Design. Jedes Projekt kann diese Werte 
+   in seiner eigenen CSS-Datei überschreiben, ohne dein Bundle anzufassen.
+*/
+:root {
+    /* Farben */
+    --kmm-primary: #4f46e5;        /* Indigo 600 */
+    --kmm-primary-hover: #4338ca;  /* Indigo 700 */
+    --kmm-danger: #dc2626;         /* Red 600 */
+    --kmm-danger-hover: #b91c1c;   /* Red 700 */
+    
+    --kmm-bg-light: #f9fafb;       /* Gray 50 */
+    --kmm-border-color: #e5e7eb;   /* Gray 200 */
+    --kmm-text-color: #374151;     /* Gray 700 */
+    --kmm-text-muted: #6b7280;     /* Gray 500 */
+    
+    /* Maße & Rahmen */
+    --kmm-radius: 0.5rem;          /* 8px */
+    --kmm-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --kmm-focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.3); /* Ring bei Fokus */
+}
 
-    /* Wenn die Dropzone gehovert wird... */
-    &:hover {
-      @apply bg-gray-50 border-blue-400;
+/* 
+   2. LAYOUT & DASHBOARD 
+*/
+.kmm-dashboard-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Mobile: 2 Spalten */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
 
-      /* ...ändere die Farbe des SVGs */
-      .kmm-dropzone-info-svg {
-        @apply text-blue-500;
-      }
+/* Responsive Breakpoints (Vanilla Media Queries) */
+@media (min-width: 640px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 768px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1024px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 1280px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(6, 1fr); } }
 
-      /* ...und die Farbe des Textes */
-      .kmm-dropzone-info-text {
-        @apply text-gray-700;
-      }
-    }
-  }
-  .kmm-dropzone-info {
-    @apply flex flex-col items-center justify-center space-y-2
-  }
+/* 
+   3. DROPZONE 
+*/
+.kmm-dashboard-dropzone {
+    width: 100%;
+    border: 2px dashed #d1d5db; /* Gray 300 */
+    border-radius: var(--kmm-radius);
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    background-color: white;
+    transition: background-color 0.2s, border-color 0.2s;
+    box-sizing: border-box; /* Wichtig für Padding */
+}
 
-  .kmm-dropzone-info-svg {
-    @apply w-10 h-10 text-gray-400 transition-colors
-  }
+.kmm-dashboard-dropzone:hover .kmm-dropzone-info-text {
+    /* Text wird dunkler (von muted zu normal) */
+    color: var(--kmm-text-color); 
+}
 
-  .kmm-dropzone-info-text {
-    @apply text-sm text-gray-500 font-medium transition-colors
-  }
+.kmm-dashboard-dropzone:hover {
+    background-color: var(--kmm-bg-light);
+    border-color: #60a5fa; /* Blue 400 */
+}
+
+.kmm-dashboard-dropzone:hover .kmm-dropzone-info-svg {
+    color: #3b82f6; /* Blue 500 */
+}
+
+.kmm-dropzone-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.kmm-dropzone-info-svg {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #9ca3af; /* Gray 400 */
+    transition: color 0.2s;
+}
+
+.kmm-dropzone-info-text {
+    font-size: 0.875rem; /* 14px */
+    color: var(--kmm-text-muted);
+    font-weight: 500;
+    margin: 0;
+}
+
+/* 
+   4. PHOTO ITEM (Preview Grid Items) 
+*/
+.kmm-photo-item {
+    position: relative;
+    width: 9rem;  /* 36 * 0.25rem = 9rem */
+    height: 9rem;
+    overflow: hidden;
+    border-radius: var(--kmm-radius);
+    border: 1px solid var(--kmm-border-color);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    background-color: #f3f4f6;
+    cursor: move; /* Fallback für Sortable */
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kmm-preview-image {
+    position: absolute;
+    inset: 0; /* top/right/bottom/left: 0 */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 10;
+    transition: transform 0.3s;
+}
+
+.kmm-photo-item:hover .kmm-preview-image {
+    transform: scale(1.05);
+}
+
+/* Buttons (Löschen / Editieren) */
+.kmm-delete-btn,
+.kmm-edit-btn {
+    position: absolute;
+    top: 0.25rem;
+    z-index: 30;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    box-shadow: var(--kmm-shadow);
+    cursor: pointer;
+    opacity: 0; /* Standardmäßig versteckt */
+    transition: opacity 0.2s, background-color 0.2s;
+    border: none;
+    padding: 0;
+}
+
+/* Positionierung */
+.kmm-delete-btn { right: 0.25rem; color: var(--kmm-danger); }
+.kmm-edit-btn { right: 2rem; color: var(--kmm-primary); }
+
+/* Hover Verhalten für Buttons */
+.kmm-photo-item:hover .kmm-delete-btn,
+.kmm-photo-item:hover .kmm-edit-btn {
+    opacity: 1;
+}
+.kmm-delete-btn:hover { background-color: #fef2f2; }
+.kmm-edit-btn:hover { background-color: #eff6ff; }
+
+/* SVG Icons in Buttons */
+.kmm-delete-btn svg, .kmm-edit-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Spinner */
+.kmm-placeholder-spin {
+    animation: spin 1s linear infinite;
+    width: 2rem;
+    height: 2rem;
+    color: #3b82f6;
+    z-index: 0;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 
-  /* ############### Preview Image Styles (find in assets/src/media_upload_controller.js) ############## */
- .kmm-photo-item {
-    /* 1. Layout für Spinner (Zentrierung) */
-    @apply flex items-center justify-center;
+/* 
+   5. MODAL 
+*/
+.kmm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    /* 2. Grundstyling des Containers */
-    @apply relative w-36 h-36 mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm bg-gray-100 cursor-move select-none;
+.kmm-modal.kmm-hidden {
+    display: none;
+}
 
-    /* 3. HOVER EFFEKTE (Nesting) - Kein 'group' nötig! */
-    &:hover {
-      /* Buttons einblenden */
-      .kmm-delete-btn,
-      .kmm-edit-btn {
-        @apply opacity-100;
-      }
-      
-      /* Bild leicht zoomen */
-      .kmm-preview-image {
-        @apply scale-105;
-      }
-    }
-  }
+.kmm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
 
-  /* Das Bild selbst (Cover-Style, absolut über dem Spinner) */
-  .kmm-preview-image {
-    @apply absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-300;
-  }
-  
-  /* --- Buttons (Standardmäßig unsichtbar opacity-0) --- */
-  .kmm-delete-btn {
-    @apply absolute top-1 right-1 z-30 cursor-pointer;
-    @apply size-6 rounded-full! flex items-center justify-center shadow-md;
-    @apply bg-white text-red-600 transition-all opacity-0;
-    @apply hover:bg-red-50;
-  }
+.kmm-modal-dialog {
+    position: relative;
+    background-color: white;
+    border-radius: var(--kmm-radius);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    width: 100%;
+    max-width: 32rem; /* ca 512px */
+    margin: 0 1rem;
+    overflow: hidden;
+    z-index: 10;
+}
 
-  .kmm-edit-btn {
-    @apply absolute top-1 right-8 z-30 cursor-pointer;
-    @apply size-6 rounded-full! flex items-center justify-center shadow-md;
-    @apply bg-white text-blue-600 transition-all opacity-0;
-    @apply hover:bg-blue-50;
-  }
+.kmm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+}
 
-  .kmm-delete-btn svg, .kmm-edit-btn svg {
-    @apply w-4 h-4;
-  }
+.kmm-modal-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #111827;
+    margin: 0;
+}
 
-  /* --- Spinner --- */
-  .kmm-placeholder-spin {
-    @apply text-blue-500 z-0; /* z-0 damit er unter dem Bild liegt */
-  }
-  
-  .kmm-placeholder-spin {
-    @apply animate-spin h-8 w-8 text-blue-500 z-0;
-  }
+.kmm-modal-close {
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #9ca3af;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.kmm-modal-close:hover { color: #4b5563; }
 
-  /* --- Hauptbild Markierung --- */
-  .kmm-main-image-border {
-    @apply ring-4 ring-blue-600 ring-offset-2 ring-offset-white;
-  }
+.kmm-modal-body {
+    padding: 1rem;
+}
 
-  .kmm-main-image-badge {
-    @apply absolute bottom-2 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white text-[10px] font-bold py-1 px-3 rounded-full uppercase z-20 pointer-events-none backdrop-blur-sm shadow-lg whitespace-nowrap;
-  }
+/* 
+   6. FORMULAR (Im Modal) 
+*/
+.kmm-modal-preview-box {
+    display: flex;
+    justify-content: center;
+    background-color: var(--kmm-bg-light);
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--kmm-border-color);
+    margin-bottom: 1rem;
+}
+
+.kmm-modal-preview-img {
+    width: auto;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 0.25rem;
+    box-shadow: var(--kmm-shadow);
+}
+
+.kmm-form-group {
+    margin-bottom: 1rem;
+}
+
+.kmm-form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--kmm-text-color);
+    margin-bottom: 0.25rem;
+}
+
+.kmm-form-input {
+    display: block;
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    box-sizing: border-box; /* Wichtig! */
+}
+
+.kmm-form-input:focus {
+    outline: none;
+    border-color: var(--kmm-primary);
+    box-shadow: var(--kmm-focus-ring);
+}
+
+.kmm-form-help {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--kmm-text-muted);
+}
+
+.kmm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--kmm-border-color);
+}
+
+.kmm-btn-cancel,
+.kmm-btn-save {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.kmm-btn-cancel {
+    background-color: white;
+    border: 1px solid #d1d5db;
+    color: var(--kmm-text-color);
+}
+.kmm-btn-cancel:hover { background-color: var(--kmm-bg-light); }
+
+.kmm-btn-save {
+    background-color: var(--kmm-primary);
+    color: white;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.kmm-btn-save:hover { background-color: var(--kmm-primary-hover); }
+.kmm-btn-save:disabled { opacity: 0.7; cursor: not-allowed;
+ }
+
+ /* Der "Ring" um das erste Bild */
+.kmm-main-image-border {
+    /* 
+       Tailwind: ring-4 ring-blue-600 ring-offset-2 
+       Vanilla CSS Simulation mit Box-Shadow:
+       1. Shadow: Weißer Abstand (Offset)
+       2. Shadow: Eigentlicher Ring in Primärfarbe
+    */
+    box-shadow: 0 0 0 2px white, 0 0 0 6px var(--kmm-primary);
+    
+    /* Optional: Damit der Ring nicht abgeschnitten wird, falls container overflow hidden hat */
+    z-index: 20; 
+}
+
+/* Das "Hauptbild" Label/Badge */
+.kmm-main-image-badge {
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%); /* Zentrieren */
+    
+    background-color: var(--kmm-primary); /* oder rgba(79, 70, 229, 0.9) für Transparenz */
+    color: white;
+    
+    font-size: 0.625rem; /* ca 10px */
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+    
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px; /* Full rounded */
+    
+    z-index: 20;
+    pointer-events: none; /* Klicks gehen durch das Badge durch auf das Bild */
+    
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(4px); /* Blur-Effekt falls gewünscht */
 }
