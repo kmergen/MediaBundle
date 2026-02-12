@@ -28,7 +28,7 @@ export default class extends Controller {
     autoSave: Boolean,
     type: Number,
     imageVariants: Array,
-    editableAltTextLocales: String, 
+    editableAltTextLocales: String,
 
     // UI Texte (optional für Übersetzung)
     badgeText: { type: String, default: "Hauptbild" },
@@ -110,20 +110,12 @@ export default class extends Controller {
 
   onDragOver(e) {
     e.preventDefault();
-    this.dropzoneTarget.classList.add(
-      "border-blue-500",
-      "bg-blue-50",
-      "ring-2",
-    );
+    this.dropzoneTarget.classList.add("kmm-drag-over");
   }
 
   onDragLeave(e) {
     e.preventDefault();
-    this.dropzoneTarget.classList.remove(
-      "border-blue-500",
-      "bg-blue-50",
-      "ring-2",
-    );
+    this.dropzoneTarget.classList.remove("kmm-drag-over");
   }
 
   onDrop(e) {
@@ -435,14 +427,14 @@ export default class extends Controller {
 
     // 2. Parameter vorbereiten (Cache-Buster + Locales)
     const params = new URLSearchParams();
-    
+
     // Cache Buster (gegen das Browser-Caching Problem)
-    params.append('t', Date.now());
+    params.append("t", Date.now());
 
     // NEU: Locales anhängen, falls im Dashboard konfiguriert
     // (z.B. wird daraus &locales=de,en)
     if (this.editableAltTextLocalesValue) {
-        params.append('locales', this.editableAltTextLocalesValue);
+      params.append("locales", this.editableAltTextLocalesValue);
     }
 
     // URL final zusammensetzen
@@ -450,7 +442,7 @@ export default class extends Controller {
 
     // 3. UI: Modal öffnen und Spinner anzeigen
     this._modal.classList.remove("kmm-hidden");
-    
+
     // Spinner (aus deinem CSS/SVG)
     this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
 
@@ -472,14 +464,16 @@ export default class extends Controller {
       this._modalContent.innerHTML = html;
 
       // 6. Fokus setzen (Usability)
-      const input = this._modalContent.querySelector("input:not([type='hidden'])");
+      const input = this._modalContent.querySelector(
+        "input:not([type='hidden'])",
+      );
       if (input) input.focus();
-
     } catch (error) {
       console.error(error);
       this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;
     }
-  }async edit(event) {
+  }
+  async edit(event) {
     event.preventDefault();
     const button = event.currentTarget;
     const mediaId = button.dataset.mediaId;
@@ -491,14 +485,14 @@ export default class extends Controller {
 
     // 2. Parameter vorbereiten (Cache-Buster + Locales)
     const params = new URLSearchParams();
-    
+
     // Cache Buster (gegen das Browser-Caching Problem)
-    params.append('t', Date.now());
+    params.append("t", Date.now());
 
     // NEU: Locales anhängen, falls im Dashboard konfiguriert
     // (z.B. wird daraus &locales=de,en)
     if (this.editableAltTextLocalesValue) {
-        params.append('locales', this.editableAltTextLocalesValue);
+      params.append("locales", this.editableAltTextLocalesValue);
     }
 
     // URL final zusammensetzen
@@ -506,7 +500,7 @@ export default class extends Controller {
 
     // 3. UI: Modal öffnen und Spinner anzeigen
     this._modal.classList.remove("kmm-hidden");
-    
+
     // Spinner (aus deinem CSS/SVG)
     this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
 
@@ -528,9 +522,10 @@ export default class extends Controller {
       this._modalContent.innerHTML = html;
 
       // 6. Fokus setzen (Usability)
-      const input = this._modalContent.querySelector("input:not([type='hidden'])");
+      const input = this._modalContent.querySelector(
+        "input:not([type='hidden'])",
+      );
       if (input) input.focus();
-
     } catch (error) {
       console.error(error);
       this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;

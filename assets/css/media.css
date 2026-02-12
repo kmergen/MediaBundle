@@ -54,18 +54,22 @@
     box-sizing: border-box; /* Wichtig für Padding */
 }
 
-.kmm-dashboard-dropzone:hover .kmm-dropzone-info-text {
-    /* Text wird dunkler (von muted zu normal) */
-    color: var(--kmm-text-color); 
-}
-
-.kmm-dashboard-dropzone:hover {
+.kmm-dashboard-dropzone:hover,
+.kmm-dashboard-dropzone.kmm-drag-over {
     background-color: var(--kmm-bg-light);
     border-color: #60a5fa; /* Blue 400 */
 }
 
-.kmm-dashboard-dropzone:hover .kmm-dropzone-info-svg {
+/* HIER AUCH: Das SVG soll blau werden */
+.kmm-dashboard-dropzone:hover .kmm-dropzone-info-svg,
+.kmm-dashboard-dropzone.kmm-drag-over .kmm-dropzone-info-svg {
     color: #3b82f6; /* Blue 500 */
+}
+
+/* HIER AUCH: Der Text soll dunkel werden */
+.kmm-dashboard-dropzone:hover .kmm-dropzone-info-text,
+.kmm-dashboard-dropzone.kmm-drag-over .kmm-dropzone-info-text {
+    color: var(--kmm-text-color);
 }
 
 .kmm-dropzone-info {
