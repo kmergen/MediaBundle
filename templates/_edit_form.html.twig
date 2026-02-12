@@ -7,51 +7,56 @@
     }
     }) }}
 
-    {# VORSCHAU #}
+    {# 1. VORSCHAU-BILD #}
     <div class="kmm-modal-preview-box">
         <img src="{{ asset(previewUrl) }}"
-             alt="Vorschau"
+             alt="{{ 'dashboard.modal.preview_alt'|trans({}, 'KmMedia') }}"
              class="kmm-modal-preview-img">
     </div>
 
-    {# DYNAMISCHE FELDER (Loop) #}
+    {# 2. DYNAMISCHE ALT-TEXT FELDER #}
     <div class="kmm-form-stack">
         {% for locale in locales %}
-
             {% set fieldName = 'alt_' ~ locale %}
             {% set field = attribute(form, fieldName) %}
 
             <div class="kmm-form-group">
-                <label class="kmm-form-label" for="{{ field.vars.id }}">{{ field.vars.label }}</label>
+                {# Label mit Ersetzung des Platzhalters %locale% durch z.B. DE, EN #}
+                <label class="kmm-form-label" for="{{ field.vars.id }}">
+                    {{ field.vars.label|trans({'%locale%': locale|upper}, 'KmMedia') }}
+                </label>
 
-                {#
-                   WICHTIG: Value erzwingen! 
-                   Wir rufen media.getAlt(locale) auf.
-                #}
                 {{ form_widget(field, {
                                 'value': media.getAlt(locale) ,
                 'attr': {
-                'class': 'kmm-form-input'
+                'class': 'kmm-form-input',
+                'placeholder': field.vars.attr.placeholder|trans({}, 'KmMedia'),
+                'data-action': 'keydown.enter->media-upload#submitEdit'
                 }
                 }) }}
 
                 {{ form_errors(field) }}
             </div>
-
         {% endfor %}
 
-        <p class="kmm-form-help mt-2">Wichtig für Suchmaschinen (SEO) und Screenreader.</p>
+        {# HILFETEXT (SEO HINWEIS) #}
+        <p class="kmm-form-help mt-2">{{ 'dashboard.modal.help_text'|trans({}, 'KmMedia') }}</p>
     </div>
 
-    {# Globale Fehler #}
+    {# GLOBALE FORM-FEHLER #}
     {{ form_errors(form) }}
 
-    {# BUTTONS #}
+    {# 3. BUTTONS #}
     <div class="kmm-modal-actions">
+        {# Abbrechen schließt das Modal via Stimulus #}
         <button type="button"
                 class="kmm-btn-cancel"
-                data-action="click->media-upload#closeModal">Abbrechen</button>
-        <button type="submit" class="kmm-btn-save">Speichern</button>
+                data-action="click->media-upload#closeModal">
+            {{ 'dashboard.buttons.cancel'|trans({}, 'KmMedia') }}
+        </button>
+
+        {# Submit löst media-upload#submitEdit via Event-Listener aus connect() aus #}
+        <button type="submit" class="kmm-btn-save">{{ 'dashboard.buttons.save'|trans({}, 'KmMedia') }}</button>
     </div>
 
 {{ form_end(form) }}

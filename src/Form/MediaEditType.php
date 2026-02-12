@@ -1,4 +1,5 @@
 <?php
+// src/Form/MediaEditType.php
 
 namespace Kmergen\MediaBundle\Form;
 
@@ -14,55 +15,47 @@ class MediaEditType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // Das Array der zu bearbeitenden Sprachen (z.B. ['de'] oder ['de', 'en', 'fr'])
         $locales = $options['locales'];
 
         foreach ($locales as $locale) {
-            $fieldName = 'alt_' . $locale; // Eindeutiger Name: alt_de, alt_en ...
+            $fieldName = 'alt_' . $locale;
 
             $builder->add($fieldName, TextType::class, [
                 'mapped' => false,
-                'label' => 'Beschreibung (' . strtoupper($locale) . ')',
+                // Wir nutzen einen Key. Das %locale% ersetzen wir später im Twig.
+                'label' => 'form.media_edit.label',
                 'required' => false,
                 'attr' => [
                     'class' => 'kmm-form-input',
-                    'placeholder' => $locale === 'de' ? 'Inhalt des Bildes beschreiben...' : 'Describe image content...',
-                    // Nur beim ersten Feld Enter-Submit erlauben, oder bei allen? 
-                    // Bei allen ist ok:
+                    // Auch hier ein Key für den Platzhalter
+                    'placeholder' => 'form.media_edit.placeholder',
                     'data-action' => 'keydown.enter->media-upload#submitEdit'
                 ],
                 'label_attr' => ['class' => 'kmm-form-label'],
+                // Wichtig: Wir sagen dem Formular, welche Domain es nutzen soll
+                'translation_domain' => 'KmMedia',
             ]);
         }
 
-        // 1. DATEN LADEN
+        // 1. DATEN LADEN (PRE_SET_DATA) - bleibt identisch
         $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) use ($locales) {
-            /** @var Media|null $media */
             $media = $event->getData();
             $form = $event->getForm();
 
-            if ($media) {
+            if ($media instanceof Media) {
                 foreach ($locales as $locale) {
-                    $fieldName = 'alt_' . $locale;
-                    // Daten aus der Entity holen
-                    $val = $media->getAlt($locale);
-                    // Ins Feld schreiben
-                    $form->get($fieldName)->setData($val);
+                    $form->get('alt_' . $locale)->setData($media->getAlt($locale));
                 }
             }
         });
 
-        // 2. DATEN SPEICHERN
+        // 2. DATEN SPEICHERN (POST_SUBMIT) - bleibt identisch
         $builder->addEventListener(FormEvents::POST_SUBMIT, function (FormEvent $event) use ($locales) {
-            /** @var Media $media */
             $media = $event->getData();
             $form = $event->getForm();
 
             foreach ($locales as $locale) {
-                $fieldName = 'alt_' . $locale;
-                $newText = $form->get($fieldName)->getData();
-
-                // In Entity speichern
+                $newText = $form->get('alt_' . $locale)->getData();
                 $media->setAltForLocale($locale, $newText);
             }
         });
@@ -73,10 +66,10 @@ class MediaEditType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Media::class,
             'current_locale' => 'de',
-            'locales' => ['de'], // Default: Nur Deutsch
+            'locales' => ['de'],
+            'translation_domain' => 'KmMedia', // Global für diesen Typ setzen
         ]);
 
-        // Erlaubte Typen definieren
         $resolver->setAllowedTypes('locales', 'array');
     }
 }

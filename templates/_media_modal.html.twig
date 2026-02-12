@@ -4,27 +4,25 @@
    Dieses Markup entspricht exakt deinen CSS-Klassen aus media.css 
    Target: "modal" (für show/hide) und "modalContent" (für das HTML vom Server)
 #}
-<div data-media-upload-target="modal" 
+<div data-media-upload-target="modal"
      class="kmm-modal kmm-hidden"
      aria-modal="true"
      role="dialog">
-    
+
     <!-- Backdrop (Dunkler Hintergrund) -->
-    <div class="kmm-modal-backdrop" 
+    <div class="kmm-modal-backdrop"
          data-action="click->media-upload#closeModal"></div>
 
     <!-- Dialog Box -->
     <div class="kmm-modal-dialog">
-        
+
         <!-- Header -->
         <div class="kmm-modal-header">
-            <h3 class="kmm-modal-title">Bild bearbeiten</h3>
+            <h3 class="kmm-modal-title">{{ 'dashboard.modal_edit_title'|trans({}, 'KmMedia') }}</h3>
             <button type="button"
                     class="kmm-modal-close"
                     data-action="click->media-upload#closeModal"
-                    aria-label="Schließen">
-                &times;
-            </button>
+                    aria-label="Schließen">&times;</button>
         </div>
 
         <!-- Body (Hier wird _edit_form.html.twig reingeladen) -->

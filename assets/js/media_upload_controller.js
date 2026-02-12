@@ -1,4 +1,3 @@
-// media-bundle/assets/src/media_upload_controller.js
 import { Controller } from "@hotwired/stimulus";
 import Sortable from "sortablejs";
 
@@ -17,6 +16,7 @@ export default class extends Controller {
     "tempKey",
     "modal",
     "modalContent",
+    "errorBox",
   ];
 
   static values = {
@@ -26,16 +26,19 @@ export default class extends Controller {
     context: String,
     initialImages: Array,
     autoSave: Boolean,
-    type: Number,
     imageVariants: Array,
     editableAltTextLocales: String,
-
-    // UI Texte (optional für Übersetzung)
+    // Diese Werte kommen aus der MediaDashboardConfig (PHP)
+    maxFiles: Number,
+    maxFileSize: Number,
+    allowedMimeTypes: Array,
+    translations: Object,
     badgeText: { type: String, default: "Hauptbild" },
   };
 
   _modal = null;
-  _modal_content = null;
+  _modalContent = null;
+  _errorTimeout = null;
 
   connect() {
     this.initSortable();
@@ -45,15 +48,12 @@ export default class extends Controller {
       this._modal = this.modalTarget;
       this._modalContent = this.modalContentTarget;
 
-      // 1. Modal Teleport (ans Ende vom Body)
+      // Modal Teleport (ans Ende vom Body)
       document.body.appendChild(this._modal);
 
-      // 2. Listener für das FORMULAR (Submit)
       this.boundSubmitEdit = this.submitEdit.bind(this);
       this._modalContent.addEventListener("submit", this.boundSubmitEdit);
 
-      // 3. NEU: Listener für KLICKS (Schließen / Abbrechen / Backdrop)
-      // Wir binden eine Funktion, die alle Klicks im Modal überwacht
       this.boundHandleModalClick = this.handleModalClick.bind(this);
       this._modal.addEventListener("click", this.boundHandleModalClick);
     }
@@ -61,7 +61,6 @@ export default class extends Controller {
 
   disconnect() {
     if (this._modal) {
-      // Listener sauber entfernen
       if (this.boundSubmitEdit) {
         this._modalContent.removeEventListener("submit", this.boundSubmitEdit);
       }
@@ -72,6 +71,8 @@ export default class extends Controller {
     }
   }
 
+  // --- UI Helpers ---
+
   initSortable() {
     new Sortable(this.previewListTarget, {
       animation: 150,
@@ -79,27 +80,33 @@ export default class extends Controller {
       draggable: ".kmm-photo-item",
       onEnd: () => {
         this.updateState();
-        // Wenn Autosave an ist, Sortierung sofort senden
-        if (this.autoSaveValue) {
-          this.saveOrder();
-        }
+        if (this.autoSaveValue) this.saveOrder();
       },
     });
   }
 
-  /**
-   * Start-Zustand: Wir rendern die Bilder aus dem JSON
-   */
   renderInitialImages() {
     if (this.initialImagesValue.length > 0) {
-      this.initialImagesValue.forEach((image) => {
-        this.addImageToDOM(image);
-      });
+      this.initialImagesValue.forEach((image) => this.addImageToDOM(image));
       this.updateState();
     }
   }
 
-  // --- Upload Logic ---
+  showError(message) {
+    if (this.hasErrorBoxTarget) {
+      this.errorBoxTarget.innerText = message;
+      this.errorBoxTarget.classList.remove("kmm-hidden");
+
+      if (this._errorTimeout) clearTimeout(this._errorTimeout);
+      this._errorTimeout = setTimeout(() => {
+        this.errorBoxTarget.classList.add("kmm-hidden");
+      }, 5000);
+    } else {
+      alert(message);
+    }
+  }
+
+  // --- Events ---
 
   onDropzoneClick() {
     this.inputTarget.click();
@@ -107,48 +114,99 @@ export default class extends Controller {
   onFileChange(e) {
     this.handleFiles(e.target.files);
   }
-
   onDragOver(e) {
     e.preventDefault();
     this.dropzoneTarget.classList.add("kmm-drag-over");
   }
-
   onDragLeave(e) {
     e.preventDefault();
     this.dropzoneTarget.classList.remove("kmm-drag-over");
   }
-
   onDrop(e) {
     e.preventDefault();
     this.onDragLeave(e);
     this.handleFiles(e.dataTransfer.files);
   }
 
-  async handleFiles(files) {
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
+  // --- Core Logic: Validation & Upload ---
 
-      // 1. Platzhalter erstellen
+  /**
+   * Validiert MIME-Type und Dateigröße
+   */
+  validateFile(file) {
+    const t = this.translationsValue || {};
+
+    // 1. MIME-Type Check
+    if (
+      this.hasAllowedMimeTypesValue &&
+      this.allowedMimeTypesValue.length > 0
+    ) {
+      if (!this.allowedMimeTypesValue.includes(file.type)) {
+        const typeToShow = file.type || "Unbekannt";
+        const msg = t.errorFileType
+          ? t.errorFileType.replace("%type%", typeToShow)
+          : `Dateityp ${typeToShow} ist nicht erlaubt.`;
+        this.showError(msg);
+        return false;
+      }
+    }
+
+    // 2. File Size Check
+    if (this.maxFileSizeValue > 0) {
+      const sizeInMb = file.size / (1024 * 1024);
+      if (sizeInMb > this.maxFileSizeValue) {
+        const msg = t.errorFileSize
+          ? t.errorFileSize
+              .replace("%name%", file.name)
+              .replace("%size%", sizeInMb.toFixed(1))
+              .replace("%limit%", this.maxFileSizeValue)
+          : `Datei "${file.name}" ist zu groß`;
+        this.showError(msg);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Haupt-Loop für Uploads
+   */
+  async handleFiles(files) {
+    const fileArray = Array.from(files);
+    const t = this.translationsValue || {};
+
+    // 1. Batch-Validierung: Maximale Anzahl Bilder
+    const currentCount =
+      this.previewListTarget.querySelectorAll(".kmm-photo-item").length;
+    if (
+      this.maxFilesValue > 0 &&
+      currentCount + fileArray.length > this.maxFilesValue
+    ) {
+      this.showError(
+        t.errorMaxFiles || `Maximal ${this.maxFilesValue} Bilder erlaubt.`,
+      );
+      this.inputTarget.value = "";
+      return;
+    }
+
+    // 2. Einzelverarbeitung der Dateien
+    for (const file of fileArray) {
+      // Client-Side Validation (kein Platzhalter wenn ungültig)
+      if (!this.validateFile(file)) continue;
+
       const tempId = Math.random().toString(36).substring(7);
       this.createLoadingPlaceholder(tempId);
 
       try {
-        // 2. Komprimieren
         const compressedFile = await this.compressImage(file, 1920, 0.8);
 
-        // 3. Upload senden
         const formData = new FormData();
         formData.append("file", compressedFile);
         formData.append("context", this.contextValue);
         formData.append("autoSave", this.autoSaveValue ? "1" : "0");
-
-        if (!this.autoSaveValue) {
-          formData.append("tempKey", this.tempKeyValue);
-        }
-
-        if (this.hasAlbumIdValue && this.albumIdValue) {
+        if (!this.autoSaveValue) formData.append("tempKey", this.tempKeyValue);
+        if (this.hasAlbumIdValue && this.albumIdValue)
           formData.append("albumId", this.albumIdValue);
-        }
 
         if (this.hasImageVariantsValue) {
           this.imageVariantsValue.forEach((v, i) =>
@@ -162,17 +220,16 @@ export default class extends Controller {
           body: formData,
         });
 
-        const result = await response.json();
+        if (!response.ok) throw new Error("Server Error");
 
-        // 4. Platzhalter weg
+        const result = await response.json();
         this.removePlaceholder(tempId);
 
         if (result.id) {
           if (result.albumId) {
-            this.albumIdValue = result.albumId; // Sync für nächsten Loop
-            if (this.hasAlbumIdTarget) {
+            this.albumIdValue = result.albumId;
+            if (this.hasAlbumIdTarget)
               this.albumIdTarget.value = result.albumId;
-            }
           }
           this.addImageToDOM(result);
           this.updateState();
@@ -181,92 +238,54 @@ export default class extends Controller {
       } catch (err) {
         console.error("Upload Error:", err);
         this.removePlaceholder(tempId);
+        const errorMsg = t.errorUpload
+          ? t.errorUpload.replace("%name%", file.name)
+          : `Fehler: ${file.name}`;
+        this.showError(errorMsg);
       }
     }
     this.inputTarget.value = "";
   }
 
-  /**
-   * Baut das HTML für ein Bild und fügt es ein
-   */
+  // --- DOM Manipulation ---
+
   addImageToDOM(imageData, prepend = false) {
     const div = document.createElement("div");
-
-    // Klassen für das Item Container
     div.className = "kmm-photo-item";
     div.dataset.mediaId = imageData.id;
 
-    // Sicherstellen, dass URL passt
-    let url = imageData.previewUrl || imageData.url; // Fallback, falls Server 'url' statt 'previewUrl' sendet
+    let url = imageData.previewUrl || imageData.url;
 
-    // Das HTML Template (Dein Premium Look)
     div.innerHTML = `
-             <!-- 
-               VARIANTE NEU: Simple Cover (Das Bild füllt den Container komplett) 
-               Wichtig: Im CSS (oder Tailwind) braucht dieses IMG:
-               width: 100%; height: 100%; object-fit: cover;
-            -->
             <img src="${url}" class="kmm-preview-image" alt="Preview">
-            
-            <!-- 
-               VARIANTE ALT: Background Blur (Auskommentiert)
-               Falls du zurück willst, den Teil oben löschen und das hier einkommentieren:
-            
-            <img src="${url}" class="kmm-preview-bg-image">
-            <img src="${url}" class="kmm-preview-image" alt="Preview">
-            -->
-            
-            <!-- Badge Platzhalter (wird via JS gefüllt) -->
             <div class="badge-container"></div>
-
-            <!-- Löschen Button -->
-              <button type="button" 
-                    data-action="click->media-upload#removeImage"
-                    class="kmm-delete-btn" 
-                    title="Entfernen">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+            <button type="button" data-action="click->media-upload#removeImage" class="kmm-delete-btn" title="Entfernen">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            
-            <!-- Optional: Edit Button (für Modal) -->
-               <button type="button" 
-                    data-action="click->media-upload#edit"
-                    data-media-id="${imageData.id}" 
-                    class="kmm-edit-btn"
-                    title="Bearbeiten">
-                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                 </svg>
+            <button type="button" data-action="click->media-upload#edit" data-media-id="${imageData.id}" class="kmm-edit-btn" title="Bearbeiten">
+                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
             </button>
         `;
 
-    if (prepend) {
+    if (prepend)
       this.previewListTarget.insertAdjacentElement("afterbegin", div);
-    } else {
-      this.previewListTarget.insertAdjacentElement("beforeend", div);
-    }
+    else this.previewListTarget.insertAdjacentElement("beforeend", div);
   }
 
   removeImage(e) {
-    if (!confirm("Bild wirklich entfernen?")) return;
+    const t = this.translationsValue || {};
+    if (!confirm(t.confirmDelete || "Bild wirklich entfernen?")) return;
 
     const item = e.target.closest(".kmm-photo-item");
     const mediaId = item.dataset.mediaId;
 
-    // UI sofort aktualisieren (Optimistic UI)
     item.remove();
     this.updateState();
 
-    // Server Request bei Autosave
-    if (this.autoSaveValue && mediaId) {
-      this.deleteRemote(mediaId);
-    }
+    if (this.autoSaveValue && mediaId) this.deleteRemote(mediaId);
   }
 
-  // Nur für Autosave Modus
   async saveOrder() {
-    // IDs direkt aus den Daten-Attributen der Bilder im DOM lesen
     const ids = Array.from(
       this.previewListTarget.querySelectorAll(".kmm-photo-item"),
     )
@@ -289,10 +308,8 @@ export default class extends Controller {
     }
   }
 
-  // Nur für Autosave Modus
   async deleteRemote(id) {
     const url = this.deleteUrlTemplate.replace("ID_PLACEHOLDER", id);
-
     try {
       await fetch(url, {
         method: "DELETE",
@@ -301,15 +318,10 @@ export default class extends Controller {
           "X-CSRF-TOKEN": this.csrfValue,
         },
       });
-      console.log(`Image ${id} deleted permanently`);
     } catch (err) {
-      console.error("Delete failed", err);
-      alert("Fehler beim Löschen auf dem Server.");
-      // Optional: Bild wieder ins DOM einfügen (Rollback)
+      this.showError("Löschen auf dem Server fehlgeschlagen.");
     }
   }
-
-  // --- State Management ---
 
   updateState() {
     const ids = [];
@@ -324,41 +336,31 @@ export default class extends Controller {
       }
     });
 
-    if (this.hasMediaIdsTarget) {
-      this.mediaIdsTarget.value = ids.join(",");
-    }
+    if (this.hasMediaIdsTarget) this.mediaIdsTarget.value = ids.join(",");
   }
 
   updateMainBadge(item, isMain) {
     const badgeContainer = item.querySelector(".badge-container");
-    if (!badgeContainer) return; // Sicherheitscheck
-
-    // Altes Badge entfernen
+    if (!badgeContainer) return;
     badgeContainer.innerHTML = "";
 
     if (isMain) {
       item.classList.add("kmm-main-image-border");
-
-      // Badge HTML erzeugen
       const badge = document.createElement("div");
       badge.className = "kmm-main-image-badge";
-      badge.innerText = this.badgeTextValue;
-
+      badge.innerText =
+        this.translationsValue?.badgeText || this.badgeTextValue;
       badgeContainer.appendChild(badge);
     } else {
       item.classList.remove("kmm-main-image-border");
     }
   }
 
-  // --- Helpers ---
-
   createLoadingPlaceholder(tempId) {
     const div = document.createElement("div");
     div.id = `temp-${tempId}`;
     div.className = "kmm-photo-item";
     div.innerHTML = `<svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg>`;
-
-    // Neue Uploads kommen vorne hin
     this.previewListTarget.insertAdjacentElement("beforeend", div);
   }
 
@@ -366,16 +368,8 @@ export default class extends Controller {
     document.getElementById(`temp-${tempId}`)?.remove();
   }
 
-  // Modal Logik (Edit) bleibt erhalten, falls du sie noch brauchst
-  async edit(e) {
-    const mediaId = e.currentTarget.dataset.mediaId;
-    // ... deine Modal Logik hier ...
-    // Tipp: Da wir pure JS sind, musst du hier evtl. den Modal-Inhalt doch fetchen,
-    // oder du lässt das Bearbeiten weg, wenn es nur um Sortieren/Löschen geht.
-    console.log("Edit ID:", mediaId);
-  }
-
   async compressImage(file, maxWidth, quality) {
+    if (!file.type.startsWith("image/")) return file; // Nur Bilder komprimieren
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -410,139 +404,41 @@ export default class extends Controller {
     });
   }
 
-  // ####################################################################
-  // ####################  EDIT / MODAL LOGIC  ##########################
-  // ####################################################################
-  // media_upload_controller.js
+  // --- Modal (Edit) ---
 
   async edit(event) {
     event.preventDefault();
-    const button = event.currentTarget;
-    const mediaId = button.dataset.mediaId;
-
+    const mediaId = event.currentTarget.dataset.mediaId;
     if (!mediaId) return;
 
-    // 1. Basis URL (z.B. /media/95/edit)
     let url = this.editUrlTemplate.replace("ID_PLACEHOLDER", mediaId);
-
-    // 2. Parameter vorbereiten (Cache-Buster + Locales)
     const params = new URLSearchParams();
-
-    // Cache Buster (gegen das Browser-Caching Problem)
     params.append("t", Date.now());
-
-    // NEU: Locales anhängen, falls im Dashboard konfiguriert
-    // (z.B. wird daraus &locales=de,en)
-    if (this.editableAltTextLocalesValue) {
+    if (this.editableAltTextLocalesValue)
       params.append("locales", this.editableAltTextLocalesValue);
-    }
-
-    // URL final zusammensetzen
     url += "?" + params.toString();
 
-    // 3. UI: Modal öffnen und Spinner anzeigen
     this._modal.classList.remove("kmm-hidden");
-
-    // Spinner (aus deinem CSS/SVG)
     this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
 
     try {
-      // 4. Fetch Request (GET)
       const response = await fetch(url, {
-        method: "GET",
         headers: { "X-Requested-With": "XMLHttpRequest" },
-        cache: "no-cache", // Zwingt den Browser, den Server zu fragen
       });
-
-      if (!response.ok) throw new Error("Fehler beim Laden");
-
-      const html = await response.text();
-
-      // 5. HTML einfügen
-      // Der EventListener (submit), den wir in connect() an _modalContent gehängt haben,
-      // greift hier automatisch für das neue Formular.
-      this._modalContent.innerHTML = html;
-
-      // 6. Fokus setzen (Usability)
+      this._modalContent.innerHTML = await response.text();
       const input = this._modalContent.querySelector(
         "input:not([type='hidden'])",
       );
       if (input) input.focus();
-    } catch (error) {
-      console.error(error);
-      this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;
-    }
-  }
-  async edit(event) {
-    event.preventDefault();
-    const button = event.currentTarget;
-    const mediaId = button.dataset.mediaId;
-
-    if (!mediaId) return;
-
-    // 1. Basis URL (z.B. /media/95/edit)
-    let url = this.editUrlTemplate.replace("ID_PLACEHOLDER", mediaId);
-
-    // 2. Parameter vorbereiten (Cache-Buster + Locales)
-    const params = new URLSearchParams();
-
-    // Cache Buster (gegen das Browser-Caching Problem)
-    params.append("t", Date.now());
-
-    // NEU: Locales anhängen, falls im Dashboard konfiguriert
-    // (z.B. wird daraus &locales=de,en)
-    if (this.editableAltTextLocalesValue) {
-      params.append("locales", this.editableAltTextLocalesValue);
-    }
-
-    // URL final zusammensetzen
-    url += "?" + params.toString();
-
-    // 3. UI: Modal öffnen und Spinner anzeigen
-    this._modal.classList.remove("kmm-hidden");
-
-    // Spinner (aus deinem CSS/SVG)
-    this._modalContent.innerHTML = `<div style="display:flex; justify-content:center; padding:3rem;"><svg class="kmm-placeholder-spin" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5a.75.75 0 0 1 1.5 0c0 5.523-4.477 10-10 10S2 17.523 2 12S6.477 2 12 2a.75.75 0 0 1 0 1.5"/></svg></div>`;
-
-    try {
-      // 4. Fetch Request (GET)
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-        cache: "no-cache", // Zwingt den Browser, den Server zu fragen
-      });
-
-      if (!response.ok) throw new Error("Fehler beim Laden");
-
-      const html = await response.text();
-
-      // 5. HTML einfügen
-      // Der EventListener (submit), den wir in connect() an _modalContent gehängt haben,
-      // greift hier automatisch für das neue Formular.
-      this._modalContent.innerHTML = html;
-
-      // 6. Fokus setzen (Usability)
-      const input = this._modalContent.querySelector(
-        "input:not([type='hidden'])",
-      );
-      if (input) input.focus();
-    } catch (error) {
-      console.error(error);
-      this._modalContent.innerHTML = `<div style="color:red; text-align:center; padding:2rem;">Fehler beim Laden.</div>`;
+    } catch (e) {
+      this._modalContent.innerHTML = "Fehler beim Laden.";
     }
   }
 
-  // --- SUBMIT LOGIC (Bleibt gleich, wird aber jetzt garantiert aufgerufen) ---
   async submitEdit(event) {
-    // 1. Browser stoppen (Kein Redirect, Kein JSON im Fenster!)
     event.preventDefault();
-    event.stopPropagation();
-
     const form = event.target;
-
-    // Button Feedback
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn ? submitBtn.innerHTML : "";
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.innerText = "Speichern...";
@@ -554,106 +450,44 @@ export default class extends Controller {
         body: new FormData(form),
         headers: { "X-Requested-With": "XMLHttpRequest" },
       });
-
-      const contentType = response.headers.get("content-type");
-
-      // SUCCESS: JSON
       if (
         response.ok &&
-        contentType &&
-        contentType.includes("application/json")
+        response.headers.get("content-type")?.includes("application/json")
       ) {
-        const data = await response.json();
-
-        // Update DOM & Modal schließen
-        this.updateItemInDOM(data);
+        this.updateItemInDOM(await response.json());
         this.closeModal();
+      } else {
+        this._modalContent.innerHTML = await response.text();
       }
-      // ERROR: HTML (Formular Validierungsfehler)
-      else {
-        const html = await response.text();
-        this._modalContent.innerHTML = html;
-        // Der Listener aus connect() bleibt aktiv, also funktioniert der nächste Versuch auch!
-      }
-    } catch (error) {
-      console.error("Save failed", error);
+    } catch (e) {
       if (submitBtn) submitBtn.innerText = "Fehler";
     } finally {
-      // Button Reset
-      if (
-        submitBtn &&
-        !this._modal.classList.contains("kmm-hidden") &&
-        !submitBtn.innerText.includes("Fehler")
-      ) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-      }
+      if (submitBtn) submitBtn.disabled = false;
     }
   }
 
   updateItemInDOM(data) {
-    if (!data.id) return;
-    // Wir suchen das Item in der previewListTarget (die ist NICHT teleportiert, also finden wir sie)
     const item = this.previewListTarget.querySelector(
       `.kmm-photo-item[data-media-id="${data.id}"]`,
     );
     if (!item) return;
-
     const img = item.querySelector(".kmm-preview-image");
-    if (img && data.alt !== undefined) {
-      img.alt = data.alt;
-    }
-
-    // Feedback
-    item.style.transition = "box-shadow 0.3s";
+    if (img && data.alt !== undefined) img.alt = data.alt;
     item.style.boxShadow = "0 0 0 4px #22c55e";
-    setTimeout(() => {
-      item.style.boxShadow = "";
-    }, 1000);
+    setTimeout(() => (item.style.boxShadow = ""), 1000);
   }
 
   handleModalClick(event) {
-    // Wir prüfen: Wurde etwas geklickt, das schließen soll?
-
-    // 1. Prüfen auf data-action="...closeModal" (X-Button & Abbrechen-Button)
-    // .closest() sucht vom geklickten Element nach oben (wichtig beim SVG Icon im Button)
-    const closeTrigger = event.target.closest('[data-action*="closeModal"]');
-
-    // 2. Prüfen auf Backdrop (Klick neben das Modal)
-    const isBackdrop = event.target.classList.contains("kmm-modal-backdrop");
-
-    if (closeTrigger || isBackdrop) {
-      this.closeModal(event);
+    if (
+      event.target.closest('[data-action*="closeModal"]') ||
+      event.target.classList.contains("kmm-modal-backdrop")
+    ) {
+      this.closeModal();
     }
   }
 
-  // --- SCHLIEẞEN LOGIK ---
-  closeModal(event) {
-    if (event) event.preventDefault();
-
-    if (this._modal) {
-      // Modal verstecken
-      this._modal.classList.add("kmm-hidden");
-      // Inhalt leeren (spart Speicher und verhindert ID-Konflikte)
-      this._modalContent.innerHTML = "";
-    }
+  closeModal() {
+    this._modal.classList.add("kmm-hidden");
+    this._modalContent.innerHTML = "";
   }
-
-  // B. Badge Logik (Beispiel: Wenn Alt Text da ist, zeige Badge)
-  // Da dein Template String in JS ist, musst du schauen, ob du dort eine Klasse/Element dafür vorgesehen hast.
-  // Wenn nicht, kannst du es hier via JS injecten.
-
-  /* Beispiel:
-        let badge = item.querySelector('.kmm-alt-badge');
-        if (data.alt && !badge) {
-            // Badge erstellen wenn noch nicht da
-            badge = document.createElement('span');
-            badge.className = 'kmm-alt-badge'; // CSS Klasse aus media.css
-            badge.innerText = 'ALT';
-            item.appendChild(badge);
-        } else if (!data.alt && badge) {
-            // Badge entfernen wenn Alt-Text gelöscht wurde
-            badge.remove();
-        }
-        */
 }

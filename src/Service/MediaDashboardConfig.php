@@ -5,10 +5,14 @@ namespace Kmergen\MediaBundle\Service;
 
 use Kmergen\MediaBundle\Entity\MediaAlbum;
 use Kmergen\MediaBundle\Contract\MediaAlbumOwnerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class MediaDashboardConfig
 {
-    public function __construct(private readonly ImageService $imageService) {}
+    public function __construct(
+        private readonly ImageService $imageService,
+        private readonly TranslatorInterface $translator
+    ) {}
 
     public function build(object $entity, array $options = []): array
     {
@@ -31,7 +35,9 @@ class MediaDashboardConfig
 
         // 3. Defaults definieren
         $defaults = [
-            'maxFiles'      => 20,
+            'maxFiles'      => 10,
+            'maxFileSize'   => 50, // Neu: Standard 10 MB
+            'allowedMimeTypes'  => ['image/jpeg', 'image/png', 'image/webp'], // Erlaubte MIME-Types
             'autoSave'      => false, // Hier ist der Standardwert
             'title'         => 'Medien verwalten',
             'imageVariants' => ['resize,900,0,80', 'crop,200,200,70'],
@@ -61,6 +67,18 @@ class MediaDashboardConfig
         $settings['albumId'] = $album?->getId();
         $settings['context'] = $context;
         $settings['images']  = $this->mapMedia($album, $sortedMediaIds);
+
+        // Translations
+        $settings['translations'] = [
+            'badgeText'     => $this->translator->trans('dashboard.badge_main', [], 'KmMedia'),
+            'confirmDelete' => $this->translator->trans('dashboard.delete_confirm', [], 'KmMedia'),
+             'errorMaxFiles' => $this->translator->trans('dashboard.error.max_files', ['%count%' => $settings['maxFiles']], 'KmMedia'),
+            'errorFileSize' => $this->translator->trans('dashboard.error.file_size', [], 'KmMedia'), // Platzhalter werden im JS ersetzt
+            'errorFileType' => $this->translator->trans('dashboard.error.file_type', [], 'KmMedia'),
+            'btnCancel'     => $this->translator->trans('dashboard.buttons.cancel', [], 'KmMedia'),
+            'btnSave'       => $this->translator->trans('dashboard.buttons.save', [], 'KmMedia'),
+            'errorUpload' => $this->translator->trans('dashboard.error.upload_failed', [], 'KmMedia'),
+        ];
 
         return $settings;
     }

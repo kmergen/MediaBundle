@@ -2,6 +2,9 @@
 
 <div class="kmm-dashboard-container"
      data-controller="media-upload"
+     data-media-upload-max-files-value="{{ config.maxFiles }}"
+     data-media-upload-max-file-size-value="{{ config.maxFileSize }}"
+     data-media-upload-allowed-mime-types-value="{{ config.allowedMimeTypes|json_encode }}"
      data-media-upload-context-value="{{ config.context }}"
      data-media-upload-initial-images-value="{{ config.images|json_encode }}"
      data-media-upload-album-id-value="{{ config.albumId }}"
@@ -9,7 +12,10 @@
      data-media-upload-temp-key-value="{{ config.tempKey }}"
      data-media-upload-image-variants-value="{{ config.imageVariants|json_encode }}"
      data-media-upload-editable-alt-text-locales-value="{{ config.editableAltTextLocales ? config.editableAltTextLocales|join(",") : '' }}"
+     data-media-upload-translations-value="{{ config.translations|json_encode }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
+
+       <div data-media-upload-target="errorBox" class="kmm-error-box kmm-hidden"></div>
        <div data-media-upload-target="previewList"
             class="kmm-dashboard-preview-grid">{# JS füllt diesen Bereich basierend auf initial-images-value #}</div>
 
@@ -25,7 +31,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
                             </path>
                      </svg>
-                     <p class="kmm-dropzone-info-text">Bilder hier ablegen oder klicken zum Hochladen</p>
+                     <p class="kmm-dropzone-info-text"> {{ 'dashboard.dropzone_help'|trans({}, 'KmMedia') }}</p>
               </div>
               <input type="file"
                      data-media-upload-target="input"
