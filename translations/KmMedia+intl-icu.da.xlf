@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="de" target-language="da" datatype="plaintext" original="file.ext">
+        <header>
+            <tool tool-id="symfony" tool-name="Symfony" />
+        </header>
+        <body>
+            <trans-unit id="dashboard.title">
+                <source>dashboard.title</source>
+                <target>Administrer medier</target>
+            </trans-unit>
+            <trans-unit id="dashboard.badge_main">
+                <source>dashboard.badge_main</source>
+                <target>Hovedbillede</target>
+            </trans-unit>
+            <trans-unit id="dashboard.delete_confirm">
+                <source>dashboard.delete_confirm</source>
+                <target>Er du sikker på, at du vil slette billedet?</target>
+            </trans-unit>
+            <trans-unit id="dashboard.loading">
+                <source>dashboard.loading</source>
+                <target>Indlæser...</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.max_files">
+                <source>dashboard.error.max_files</source>
+                <target>{count, plural, =1 {Grænsen er nået: Kun én fil tilladt.} other {Grænsen er
+                    nået: Maksimalt # filer tilladt.}}</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_size">
+                <source>dashboard.error.file_size</source>
+                <target>Filen "{name}" er for stor ({size} MB). Maks. {limit} MB tilladt.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_type">
+                <source>dashboard.error.file_type</source>
+                <target>Filtypen "{type}" er ikke tilladt.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.upload_failed">
+                <source>dashboard.error.upload_failed</source>
+                <target>Fejl ved upload af {name}</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.min_resolution">
+                <source>dashboard.error.min_resolution</source>
+                <target>Billedet er for lille. Der kræves mindst {width}x{height} pixels.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.dropzone_help">
+                <source>dashboard.dropzone_help</source>
+                <target>Slip billeder her eller klik for at uploade</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal_edit_title">
+                <source>dashboard.modal_edit_title</source>
+                <target>Rediger medie</target>
+            </trans-unit>
+            <trans-unit id="form.media_edit.label">
+                <source>form.media_edit.label</source>
+                <target>Beskrivelse ({locale})</target>
+            </trans-unit>
+            <trans-unit id="form.media_edit.placeholder">
+                <source>form.media_edit.placeholder</source>
+                <target>Beskriv billedets indhold...</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.preview_alt">
+                <source>dashboard.modal.preview_alt</source>
+                <target>Forhåndsvisning</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.help_text">
+                <source>dashboard.modal.help_text</source>
+                <target>Vigtigt for søgemaskiner (SEO) og skærmlæsere.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.buttons.cancel">
+                <source>dashboard.buttons.cancel</source>
+                <target>Annuller</target>
+            </trans-unit>
+            <trans-unit id="dashboard.buttons.save">
+                <source>dashboard.buttons.save</source>
+                <target>Gem</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

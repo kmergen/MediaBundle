@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="de" target-language="nl" datatype="plaintext" original="file.ext">
+        <header>
+            <tool tool-id="symfony" tool-name="Symfony" />
+        </header>
+        <body>
+            <trans-unit id="dashboard.title">
+                <source>dashboard.title</source>
+                <target>Media beheren</target>
+            </trans-unit>
+            <trans-unit id="dashboard.badge_main">
+                <source>dashboard.badge_main</source>
+                <target>Hoofdafbeelding</target>
+            </trans-unit>
+            <trans-unit id="dashboard.delete_confirm">
+                <source>dashboard.delete_confirm</source>
+                <target>Afbeelding echt verwijderen?</target>
+            </trans-unit>
+            <trans-unit id="dashboard.loading">
+                <source>dashboard.loading</source>
+                <target>Laden...</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.max_files">
+                <source>dashboard.error.max_files</source>
+                <target>{count, plural, =1 {Limiet bereikt: Maximaal één bestand toegestaan.} other
+                    {Limiet bereikt: Maximaal # bestanden toegestaan.}}</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_size">
+                <source>dashboard.error.file_size</source>
+                <target>Bestand "{name}" is te groot ({size} MB). Max. {limit} MB toegestaan.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.file_type">
+                <source>dashboard.error.file_type</source>
+                <target>Bestandstype "{type}" is niet toegestaan.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.upload_failed">
+                <source>dashboard.error.upload_failed</source>
+                <target>Fout beim uploaden van {name}</target>
+            </trans-unit>
+            <trans-unit id="dashboard.error.min_resolution">
+                <source>dashboard.error.min_resolution</source>
+                <target>De afbeelding is te klein. Minimaal {width}x{height} pixels vereist.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.dropzone_help">
+                <source>dashboard.dropzone_help</source>
+                <target>Sleep afbeeldingen hiernaartoe of klik om te uploaden</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal_edit_title">
+                <source>dashboard.modal_edit_title</source>
+                <target>Media bewerken</target>
+            </trans-unit>
+            <trans-unit id="form.media_edit.label">
+                <source>form.media_edit.label</source>
+                <target>Beschrijving ({locale})</target>
+            </trans-unit>
+            <trans-unit id="form.media_edit.placeholder">
+                <source>form.media_edit.placeholder</source>
+                <target>Beschrijf de inhoud van de afbeelding...</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.preview_alt">
+                <source>dashboard.modal.preview_alt</source>
+                <target>Voorbeeld</target>
+            </trans-unit>
+            <trans-unit id="dashboard.modal.help_text">
+                <source>dashboard.modal.help_text</source>
+                <target>Belangrijk voor zoekmachines (SEO) und schermlezers.</target>
+            </trans-unit>
+            <trans-unit id="dashboard.buttons.cancel">
+                <source>dashboard.buttons.cancel</source>
+                <target>Annuleren</target>
+            </trans-unit>
+            <trans-unit id="dashboard.buttons.save">
+                <source>dashboard.buttons.save</source>
+                <target>Opslaan</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
