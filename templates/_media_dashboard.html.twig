@@ -2,22 +2,22 @@
 
 <div class="kmm-dashboard-container"
      data-controller="media-upload"
-     data-media-upload-max-files-value="{{ config.maxFiles }}"
-     data-media-upload-max-file-size-value="{{ config.maxFileSize }}"
-     data-media-upload-min-width-value="{{ config.minWidth }}"
-     data-media-upload-min-height-value="{{ config.minHeight }}"
-     data-media-upload-allowed-mime-types-value="{{ config.allowedMimeTypes|json_encode }}"
-     data-media-upload-context-value="{{ config.context }}"
-     data-media-upload-initial-images-value="{{ config.images|json_encode }}"
-     data-media-upload-album-id-value="{{ config.albumId }}"
-     data-media-upload-auto-save-value="{{ config.autoSave ? 'true' : 'false' }}"
-     data-media-upload-temp-key-value="{{ config.tempKey }}"
-     data-media-upload-image-variants-value="{{ config.imageVariants|json_encode }}"
-     data-media-upload-editable-alt-text-locales-value="{{ config.editableAltTextLocales ? config.editableAltTextLocales|join(",") : '' }}"
-     data-media-upload-translations-value="{{ config.translations|json_encode }}"
+     data-media-upload-max-files-value="{{ options.maxFiles }}"
+     data-media-upload-max-file-size-value="{{ options.maxFileSize }}"
+     data-media-upload-min-width-value="{{ options.minWidth }}"
+     data-media-upload-min-height-value="{{ options.minHeight }}"
+     data-media-upload-allowed-mime-types-value="{{ options.allowedMimeTypes|json_encode }}"
+     data-media-upload-context-value="{{ options.context }}"
+     data-media-upload-initial-images-value="{{ options.images|json_encode }}"
+     data-media-upload-album-id-value="{{ options.albumId }}"
+     data-media-upload-auto-save-value="{{ options.autoSave ? 'true' : 'false' }}"
+     data-media-upload-temp-key-value="{{ options.tempKey }}"
+     data-media-upload-image-variants-value="{{ options.imageVariants|json_encode }}"
+     data-media-upload-editable-alt-text-locales-value="{{ options.editableAltTextLocales ? options.editableAltTextLocales|join(",") : '' }}"
+     data-media-upload-translations-value="{{ options.translations|json_encode }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
 
-       {% if config.title is defined and config.title %}<h2 class="kmm-dashboard-title">{{ config.title }}</h2>{% endif %}
+       {% if options.title is defined and options.title %}<h2 class="kmm-dashboard-title">{{ options.title }}</h2>{% endif %}
 
        <div data-media-upload-target="errorBox" class="kmm-error-box kmm-hidden"></div>
 
@@ -56,13 +56,13 @@
        <input type="hidden"
               data-media-upload-target="albumId"
               name="mediaAlbumId"
-              value="{{ config.albumId|default("") }}">
+              value="{{ options.albumId|default("") }}">
 
        {# 5. Der TempKey (für die Finalisierung/Cleanup) #}
        <input type="hidden"
               data-media-upload-target="tempKey"
               name="mediaTempKey"
-              value="{{ config.tempKey }}">
+              value="{{ options.tempKey }}">
 
        {# ... Modal für edit action ... #}
        {% include '@Media/_media_modal.html.twig' %}
