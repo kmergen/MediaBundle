@@ -37,8 +37,8 @@ class MediaDashboardConfig
         $defaults = [
             'maxFiles'      => 20,
             'maxFileSize'   => 10, // Neu: Standard 10 MB
-            'minWidth'      => 8000,  // Mindestens 800px Breite
-            'minHeight'     => 6000,  // Mindestens 600px Höhe
+            'minWidth'      => 640,  // Neue Stufe: 640px
+            'minHeight'     => 480,  // Passend dazu 480px (klassisch 4:3)
             'allowedMimeTypes'  => ['image/jpeg', 'image/png', 'image/webp'], // Erlaubte MIME-Types
             'autoSave'      => false, // Hier ist der Standardwert
             'title' => $this->translator->trans('dashboard.title', [], 'KmMedia'),
