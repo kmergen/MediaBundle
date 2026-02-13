@@ -42,6 +42,10 @@
         <source>dashboard.error.upload_failed</source>
         <target>Fehler beim Upload von {name}</target>
       </trans-unit>
+      <trans-unit id="dashboard.error.min_resolution">
+        <source>dashboard.error.min_resolution</source>
+        <target>Das Bild ist zu klein. Erforderlich sind mindestens {width}x{height} Pixel.</target>
+      </trans-unit>
 
       <!-- 3. DASHBOARD UI -->
       <trans-unit id="dashboard.dropzone_help">

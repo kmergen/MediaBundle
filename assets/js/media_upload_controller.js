@@ -20,6 +20,7 @@ export default class extends Controller {
   ];
 
   static values = {
+    test: String,
     albumId: Number,
     tempKey: String,
     csrf: String,
@@ -31,6 +32,8 @@ export default class extends Controller {
     // Diese Werte kommen aus der MediaDashboardConfig (PHP)
     maxFiles: Number,
     maxFileSize: Number,
+    minWidth: Number,
+    minHeight: Number,
     allowedMimeTypes: Array,
     translations: Object,
     badgeText: { type: String, default: "Hauptbild" },
@@ -130,6 +133,18 @@ export default class extends Controller {
 
   // --- Core Logic: Validation & Upload ---
 
+  getImageDimensions(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const dimensions = { width: img.width, height: img.height };
+        URL.revokeObjectURL(img.src); // Speicher freigeben
+        resolve(dimensions);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   /**
    * Validiert eine einzelne Datei (ICU Syntax: {name}, {type}, etc.)
    */
@@ -176,7 +191,6 @@ export default class extends Controller {
     const t = this.translationsValue || {};
 
     // 1. Batch-Validierung: Maximale Anzahl Bilder
-    // (Hinweis: t.errorMaxFiles kommt vom Server bereits fertig mit der Zahl drin!)
     const currentCount =
       this.previewListTarget.querySelectorAll(".kmm-photo-item").length;
     if (
@@ -192,15 +206,37 @@ export default class extends Controller {
 
     // 2. Einzelverarbeitung
     for (const file of fileArray) {
-      // Validierung (Mime/Size) - Platzhalter wird erst danach erstellt
+      // A. Schnelle Validierung (Mime/Size)
       if (!this.validateFile(file)) continue;
 
+      // B. Platzhalter erstellen (da ab hier asynchrone Arbeit beginnt)
       const tempId = Math.random().toString(36).substring(7);
       this.createLoadingPlaceholder(tempId);
 
       try {
+        // C. Auflösungs-Check (nur für Bilder)
+        if (file.type.startsWith("image/")) {
+          const dimensions = await this.getImageDimensions(file);
+
+          if (this.minWidthValue > 0 || this.minHeightValue > 0) {
+            if (
+              dimensions.width < this.minWidthValue ||
+              dimensions.height < this.minHeightValue
+            ) {
+              const msg =
+                t.errorMinResolution ||
+                `Bild zu klein (min. ${this.minWidthValue}x${this.minHeightValue})`;
+              this.showError(msg);
+              this.removePlaceholder(tempId);
+              continue;
+            }
+          }
+        }
+
+        // D. Kompression
         const compressedFile = await this.compressImage(file, 1920, 0.8);
 
+        // E. FormData & Upload
         const formData = new FormData();
         formData.append("file", compressedFile);
         formData.append("context", this.contextValue);
@@ -239,11 +275,9 @@ export default class extends Controller {
       } catch (err) {
         console.error("Upload Error:", err);
         this.removePlaceholder(tempId);
-
-        // Fehler-Message mit ICU Syntax Ersetzung {name}
         const errorMsg = t.errorUpload
           ? t.errorUpload.replace("{name}", file.name)
-          : `Fehler beim Upload von ${file.name}`;
+          : `Fehler: ${file.name}`;
         this.showError(errorMsg);
       }
     }
