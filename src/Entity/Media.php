@@ -30,8 +30,12 @@ class Media
     #[ORM\Column]
     private ?int $size = null;
 
-    #[ORM\Column(length: 100, nullable: true)]
-    private ?string $dimension = null;
+    #[ORM\Column(nullable: true)]
+    private ?int $width = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $height = null;
+
 
     #[ORM\ManyToOne(inversedBy: 'media')]
     private ?MediaAlbum $album = null;
@@ -104,15 +108,24 @@ class Media
         $this->position = $position;
     }
 
-    public function getDimension(): ?string
+    public function getWidth(): ?string
     {
-        return $this->dimension;
+        return $this->width;
     }
 
-    public function setDimension(?string $dimension): static
+    public function setWidth(?int $width): void
     {
-        $this->dimension = $dimension;
-        return $this;
+        $this->width = $width;
+    }
+
+    public function getHeight(): ?string
+    {
+        return $this->height;
+    }
+
+    public function setHeight(?int $height): void
+    {
+        $this->height = $height;
     }
 
     public function getAlbum(): ?MediaAlbum

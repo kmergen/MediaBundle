@@ -69,7 +69,15 @@ class ImageUploadService
         if (!is_dir($absoluteTargetDir)) {
             mkdir($absoluteTargetDir, 0775, true);
         }
+        $finalPath = $absoluteTargetDir . '/' . $newFilename;
         $file->move($absoluteTargetDir, $newFilename);
+
+        // 4b. Get Image Dimensions
+        if (str_starts_with($media->getMime(), 'image/')) {
+            [$width, $height] = getimagesize($finalPath);
+            $media->setWidth($width);
+            $media->setHeight($height);
+        }
 
         // 5. DB-Update
         $media->setUrl($finalUrl);
