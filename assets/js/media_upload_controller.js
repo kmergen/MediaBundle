@@ -245,9 +245,11 @@ export default class extends Controller {
         if (this.hasAlbumIdValue && this.albumIdValue)
           formData.append("albumId", this.albumIdValue);
 
-        if (this.hasImageVariantsValue) {
-          this.imageVariantsValue.forEach((v, i) =>
-            formData.append(`imageVariants[${i}]`, v),
+        // Send the entire array of objects as a single JSON string
+        if (this.hasImageVariantsValue && this.imageVariantsValue.length > 0) {
+          formData.append(
+            "imageVariants",
+            JSON.stringify(this.imageVariantsValue),
           );
         }
 

@@ -11,12 +11,12 @@ use Imagine\Image\ManipulatorInterface;
 
 class ImageVariantGd
 {
-  private static $imagine;
+  private static ?Imagine $imagine = null;
 
   public static function resize(
     string $imgRef,
-    int $width,
-    int $height,
+    ?int $width,
+    ?int $height,
     string $mode = 'inbound'
   ): ImageInterface {
     if (self::$imagine === null) {
@@ -24,7 +24,28 @@ class ImageVariantGd
     }
 
     $image = self::$imagine->open($imgRef);
-    $box = new Box($width, $height);
+
+    // Imagine requires actual > 0 integers for Box.
+    // We calculate the missing dimension based on original aspect ratio!
+    $size = $image->getSize();
+    $origWidth = $size->getWidth();
+    $origHeight = $size->getHeight();
+
+    if ($width === null && $height === null) {
+      $w = $origWidth;
+      $h = $origHeight;
+    } elseif ($width === null || $width === 0) {
+      $w = (int) round($origWidth * ($height / $origHeight));
+      $h = $height;
+    } elseif ($height === null || $height === 0) {
+      $w = $width;
+      $h = (int) round($origHeight * ($width / $origWidth));
+    } else {
+      $w = $width;
+      $h = $height;
+    }
+
+    $box = new Box($w, $h);
 
     if ($mode === 'outbound') {
       // Resize to fill the box and crop the overflow
@@ -37,14 +58,20 @@ class ImageVariantGd
     return $image;
   }
 
-  public static function crop(string $imgRef, int $width, int $height): ImageInterface
+  public static function crop(string $imgRef, ?int $width, ?int $height): ImageInterface
   {
     if (self::$imagine === null) {
       self::$imagine = new Imagine();
     }
 
     $image = self::$imagine->open($imgRef);
-    $box = new Box($width, $height);
+    $size = $image->getSize();
+
+    // If one dimension is missing, default to making it a perfect square
+    $w = $width ?? $height ?? $size->getWidth();
+    $h = $height ?? $width ?? $size->getHeight();
+
+    $box = new Box($w, $h);
 
     // Use thumbnail function to resize and crop
     return $image->thumbnail($box, ManipulatorInterface::THUMBNAIL_OUTBOUND);
@@ -52,10 +79,14 @@ class ImageVariantGd
 
   public static function compositeBlur(
     string $imgRef,
-    int $width,
-    int $height,
-  ): \Imagine\Effects\EffectsInterface {
+    ?int $width,
+    ?int $height
+  ): ImageInterface { // Fixed return type to ImageInterface!
     $image = self::resize($imgRef, $width, $height);
-    return $image->effects()->blur(5);
+
+    // Apply blur, then return the image itself (effects() might return EffectsInterface otherwise)
+    $image->effects()->blur(5);
+
+    return $image;
   }
 }

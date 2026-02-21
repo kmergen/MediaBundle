@@ -12,102 +12,76 @@ use Symfony\Component\Filesystem\Filesystem;
 
 readonly class ImageService
 {
-
   public function __construct(private Filesystem $filesystem) {}
 
   /**
-   * Generates a thumbnail for the given image reference based on the specified variant.
+   * Generates a thumbnail for the given image reference.
    *
-   * The variant string is expected to be in the format: "action,width,height,quality".
-   * For example: "resize,200,200,80".
-   *
-   * @param string $imgRef The path to the original image file.
-   * @param string $variant The variant string specifying the action, width, height, and quality.
-   * @param bool $force Whether to force regeneration of the thumbnail even if it already exists.
+   * @param string $imgRef   The path to the original image file.
+   * @param string $action   The action to perform (e.g., 'resize', 'crop').
+   * @param int|null $width  The target width (null for auto-calculation).
+   * @param int|null $height The target height (null for auto-calculation).
+   * @param int $quality     The image quality (1-100). Default is 80.
+   * @param bool $force      Whether to force regeneration of the thumbnail.
+   * @param mixed ...$options Any future extra parameters (e.g., blur_radius: 5).
    *
    * @return string The path to the generated thumbnail.
-   *
-   * @throws \InvalidArgumentException If the variant action is unknown.
-   * @throws \RuntimeException If the image processing fails.
    */
-  public function thumb(string $imgRef, string $variant, bool $force = false): string
-  {
-    list($action, $width, $height, $quality) = explode(',', $variant);
-    $variantDir = $this->generateVariantDirectory($imgRef, $action, $width, $height, $quality);
+  public function thumb(
+    string $imgRef,
+    string $action,
+    ?int $width = null,
+    ?int $height = null,
+    int $quality = 80,
+    bool $force = false,
+    mixed ...$options
+  ): string {
+    $variantDir = $this->generateVariantDirectory($imgRef, $action, $width, $height, $quality, $options);
     $variantPath = $variantDir . DIRECTORY_SEPARATOR . basename($imgRef);
 
     if (!$force && $this->filesystem->exists($variantPath)) {
       return $variantPath;
     }
 
-    // Determine whether to use GD or Imagick
+    // Determine whether to use Imagick or GD
     $image = extension_loaded('imagick')
-      ? $this->processWithImagick($action, $imgRef, (int)$width, (int)$height)
-      : $this->processWithGd($action, $imgRef, (int)$width, (int)$height);
+      ? $this->processWithImagick($action, $imgRef, $width, $height, $options)
+      : $this->processWithGd($action, $imgRef, $width, $height, $options);
 
     // Save the image
-    return $this->saveImage($image, $variantPath, (int)$quality);
+    return $this->saveImage($image, $variantPath, $quality);
   }
 
-  /**
-   * Processes the image using the Imagick library.
-   *
-   * @param string $action The action to perform (e.g., 'resize', 'crop', 'compositeBlur').
-   * @param string $imgRef The path to the original image file.
-   * @param int $width The target width for the image.
-   * @param int $height The target height for the image.
-   *
-   * @return Imagick The processed Imagick object.
-   *
-   * @throws \InvalidArgumentException If the variant action is unknown.
-   */
-  private function processWithImagick(string $action, string $imgRef, int $width, int $height): Imagick
+  private function processWithImagick(string $action, string $imgRef, ?int $width, ?int $height, array $options = []): Imagick
   {
     return match ($action) {
       'resize' => ImageVariantImagick::resize($imgRef, $width, $height),
       'crop' => ImageVariantImagick::crop($imgRef, $width, $height),
-      'compositeBlur' => ImageVariantImagick::compositeBlur($imgRef, $width, $height),
+      'compositeBlur' => ImageVariantImagick::compositeBlur(
+        $imgRef,
+        $width,
+        $height,
+        $options['blur_radius'] ?? 5 // Example of pulling a future option
+      ),
       default => throw new \InvalidArgumentException("Unknown variant action: $action"),
     };
   }
 
-  /**
-   * Processes the image using the GD library.
-   *
-   * @param string $action The action to perform (e.g., 'resize', 'crop', 'compositeBlur').
-   * @param string $imgRef The path to the original image file.
-   * @param int $width The target width for the image.
-   * @param int $height The target height for the image.
-   *
-   * @return ImageInterface The processed image object.
-   *
-   * @throws \InvalidArgumentException If the variant action is unknown.
-   */
-  private function processWithGd(string $action, string $imgRef, int $width, int $height): ImageInterface
+  private function processWithGd(string $action, string $imgRef, ?int $width, ?int $height, array $options = []): ImageInterface
   {
     return match ($action) {
       'resize' => ImageVariantGd::resize($imgRef, $width, $height),
       'crop' => ImageVariantGd::crop($imgRef, $width, $height),
-      'compositeBlur' => ImageVariantGd::compositeBlur($imgRef, $width, $height),
+      'compositeBlur' => ImageVariantGd::compositeBlur(
+        $imgRef,
+        $width,
+        $height,
+        $options['blur_radius'] ?? 5
+      ),
       default => throw new \InvalidArgumentException("Unknown variant action: $action"),
     };
   }
 
-  /**
-   * Saves the processed image to the specified path with the given quality.
-   *
-   * This method supports both `ImageInterface` (e.g., from GD) and `Imagick` objects.
-   * It ensures the directory for the image exists before saving and applies the specified quality.
-   *
-   * @param object $image The image object to save. Must be an instance of `ImageInterface` or `Imagick`.
-   * @param string $path The path where the image should be saved.
-   * @param int $quality The quality of the saved image (0–100 for GD, 1–100 for Imagick).
-   *
-   * @return string The path to the saved image.
-   *
-   * @throws \InvalidArgumentException If the image type is unsupported.
-   * @throws \RuntimeException If the directory creation or image saving fails.
-   */
   private function saveImage(object $image, string $path, int $quality): string
   {
     $this->filesystem->mkdir(dirname($path));
@@ -124,21 +98,34 @@ readonly class ImageService
     return $path;
   }
 
+  /**
+   * Generates a folder path dynamically like: "dirname/resize_400xauto_q80_a1b2c3"
+   */
   private function generateVariantDirectory(
     string $imgRef,
     string $action,
-    string $width,
-    string $height,
-    string $quality
+    ?int $width,
+    ?int $height,
+    int $quality,
+    array $options = []
   ): string {
     $pathInfo = pathinfo($imgRef);
+
+    // Fallback to "auto" if width or height are null
+    $w = $width ?? 'auto';
+    $h = $height ?? 'auto';
+
+    // Create a short hash if extra options exist, preventing cache collisions
+    $optionsHash = $options !== [] ? '_' . substr(md5(serialize($options)), 0, 6) : '';
+
     return sprintf(
-      '%s/%s_%sx%s_q%s',
+      '%s/%s_%sx%s_q%d%s',
       $pathInfo['dirname'],
       $action,
-      $width,
-      $height,
-      $quality
+      $w,
+      $h,
+      $quality,
+      $optionsHash
     );
   }
 }

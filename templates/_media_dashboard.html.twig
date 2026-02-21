@@ -6,15 +6,15 @@
      data-media-upload-max-file-size-value="{{ options.maxFileSize }}"
      data-media-upload-min-width-value="{{ options.minWidth }}"
      data-media-upload-min-height-value="{{ options.minHeight }}"
-     data-media-upload-allowed-mime-types-value="{{ options.allowedMimeTypes|json_encode }}"
+     data-media-upload-allowed-mime-types-value="{{ options.allowedMimeTypes|json_encode|e("html_attr") }}"
      data-media-upload-context-value="{{ options.context }}"
-     data-media-upload-initial-images-value="{{ options.images|json_encode }}"
+     data-media-upload-initial-images-value="{{ options.images|json_encode|e("html_attr") }}"
      data-media-upload-album-id-value="{{ options.albumId }}"
      data-media-upload-auto-save-value="{{ options.autoSave ? 'true' : 'false' }}"
      data-media-upload-temp-key-value="{{ options.tempKey }}"
-     data-media-upload-image-variants-value="{{ options.imageVariants|json_encode }}"
+     data-media-upload-image-variants-value="{{ options.imageVariants|json_encode|e("html_attr") }}"
      data-media-upload-editable-alt-text-locales-value="{{ options.editableAltTextLocales ? options.editableAltTextLocales|join(",") : '' }}"
-     data-media-upload-translations-value="{{ options.translations|json_encode }}"
+     data-media-upload-translations-value="{{ options.translations|json_encode|e("html_attr") }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
 
        {% if options.title is defined and options.title %}<h2 class="kmm-dashboard-title">{{ options.title }}</h2>{% endif %}

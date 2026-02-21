@@ -37,16 +37,48 @@ class MediaController extends AbstractController
         // Handle the file upload and save the media
         $media = $imageUploadService->upload($request);
 
-        // Handle image variants if specified
-        $imageVariants = $request->request->all('imageVariants');
-        $previewUrl = null; // Variable für die Vorschau
+        // Parse the JSON string sent from JavaScript
+        $imageVariantsJson = $request->request->get('imageVariants');
+        $imageVariants = [];
 
+        if (is_string($imageVariantsJson)) {
+            $decoded = json_decode($imageVariantsJson, true);
+            if (is_array($decoded)) {
+                $imageVariants = $decoded;
+            }
+        }
+
+        $previewUrl = null;
+
+        // Loop through the purely structured arrays
         foreach ($imageVariants as $variant) {
-            // Wir merken uns die generierte URL des Thumbnails
-            $generatedUrl = $imageService->thumb($media->getUrl(), $variant, true);
+            if (!is_array($variant)) {
+                continue; // Safety check
+            }
 
-            // Wenn das die Variante für die Vorschau ist (z.B. die erste), nutzen wir sie
-            if (!$previewUrl) {
+            // Extract core arguments with smart defaults
+            $action  = $variant['action'] ?? 'resize';
+            $width   = !empty($variant['width']) ? (int)$variant['width'] : null;
+            $height  = !empty($variant['height']) ? (int)$variant['height'] : null;
+            $quality = isset($variant['quality']) ? (int)$variant['quality'] : 80;
+
+            // Extract any future named arguments (like blur_radius, watermark, etc.)
+            $options = $variant;
+            unset($options['action'], $options['width'], $options['height'], $options['quality']);
+
+            // Generate thumbnail using the new signature
+            $generatedUrl = $imageService->thumb(
+                $media->getUrl(),
+                $action,
+                $width,
+                $height,
+                $quality,
+                true, // force regeneration on upload
+                ...$options // unpack future options
+            );
+
+            // Use the first generated variant as the preview
+            if ($generatedUrl && !$previewUrl) {
                 $previewUrl = $generatedUrl;
             }
         }
@@ -57,10 +89,10 @@ class MediaController extends AbstractController
         }
 
         return $this->json([
-            'success' => true,
-            'id'      => $media->getId(),
-            'albumId' => $media->getAlbum()->getId(), // <--- NEU: ID zurückgeben!
-            'url'     => '/' . ltrim($media->getUrl(), '/'),
+            'success'    => true,
+            'id'         => $media->getId(),
+            'albumId'    => $media->getAlbum()->getId(),
+            'url'        => '/' . ltrim($media->getUrl(), '/'),
             'previewUrl' => '/' . ltrim($previewUrl, '/'),
         ], 200);
     }
