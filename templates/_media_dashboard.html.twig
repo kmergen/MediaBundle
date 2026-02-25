@@ -49,19 +49,19 @@
        {# 3. Media_ids) #}
        <input type="hidden"
               data-media-upload-target="mediaIds"
-              name="mediaIds"
+              name="{{ options.mediaInputPrefix ? options.mediaInputPrefix ~ '[ids]' : 'mediaIds' }}"
               value="">
 
        {# 4. Die Album ID #}
        <input type="hidden"
               data-media-upload-target="albumId"
-              name="mediaAlbumId"
+              name="{{ options.mediaInputPrefix ? options.mediaInputPrefix ~ '[albumId]' : 'mediaAlbumId' }}"
               value="{{ options.albumId|default("") }}">
 
        {# 5. Der TempKey (für die Finalisierung/Cleanup) #}
        <input type="hidden"
               data-media-upload-target="tempKey"
-              name="mediaTempKey"
+              name="{{ options.mediaInputPrefix ? options.mediaInputPrefix ~ '[tempKey]' : 'mediaTempKey' }}"
               value="{{ options.tempKey }}">
 
        {# ... Modal für edit action ... #}

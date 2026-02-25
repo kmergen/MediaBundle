@@ -40,12 +40,16 @@ class MediaDashboardConfig
             'autoSave'      => false,
             'title' => $this->translator->trans('dashboard.title', [], 'KmMedia'),
 
-            // --- NEW: Using structured arrays instead of 'resize,900,0,80' ---
             'imageVariants' => [
                 ['action' => 'resize', 'width' => 900], // Height is omitted (auto), quality defaults to 80
                 ['action' => 'crop', 'width' => 200, 'height' => 200, 'quality' => 70]
             ],
-
+            /**
+             * Optional prefix for hidden input fields (ids, albumId, tempKey).
+             * Use this to avoid name collisions when rendering multiple dashboards
+             * in a single form (e.g., inside a collection).
+             */
+            'mediaInputPrefix' => null,
             'editableAltTextLocales' => null,
         ];
 
