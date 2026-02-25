@@ -16,40 +16,40 @@ trait MediaRequestTrait
      */
     public function handleMediaUpload(
         Request $request,
-        object $entity, // z.B. Breeder
+        object $entity,
         EntityManagerInterface $em,
-        MediaPersistenceService $persistenceService
+        MediaPersistenceService $persistenceService,
+        ?string $inputPrefix = null // NEU: Optionaler Prefix z.B. "amenity_media[0]"
     ): void {
-        $albumId = $request->request->get('mediaAlbumId');
-        $mediaIdsString = $request->request->get('mediaIds');
+        // Daten aus dem Request extrahieren
+        if ($inputPrefix) {
+            // Extrahiert "ids" und "albumId" aus dem verschachtelten Array (z.B. amenity_media[0][ids])
+            $parts = $this->parseInputPrefix($inputPrefix);
+            $rootData = $request->request->all($parts['root']);
+            $mediaData = $rootData[$parts['index']] ?? [];
 
-        // 1. Album laden (Entweder das existierende oder das neu erstellte aus dem Upload)
+            $albumId = $mediaData['albumId'] ?? null;
+            $mediaIdsString = $mediaData['ids'] ?? null;
+        } else {
+            $albumId = $request->request->get('mediaAlbumId');
+            $mediaIdsString = $request->request->get('mediaIds');
+        }
+
         $album = null;
-
-        // Hat die Entity schon ein Album?
         if (method_exists($entity, 'getMediaAlbum') && $entity->getMediaAlbum()) {
             $album = $entity->getMediaAlbum();
-        }
-        // Wenn nicht, schauen wir, ob im Request eine ID steht (neuer Upload)
-        elseif ($albumId) {
+        } elseif ($albumId) {
             $album = $em->getRepository(MediaAlbum::class)->find($albumId);
-
-            // Verknüpfung herstellen, falls Entity Setter hat
             if ($album && method_exists($entity, 'setMediaAlbum')) {
                 $entity->setMediaAlbum($album);
             }
         }
 
-        // 2. Finalisieren (Aufräumen, Sortieren, TempKeys entfernen)
-        // Wir machen das nur, wenn ein Album da ist UND (wichtig!) das Formular valide war.
-        // Da diese Methode meist IN der if($form->isValid()) Schleife aufgerufen wird, passt das.
         if ($album) {
-            // Hinweis: mediaIdsString kann null sein, wenn nichts geändert wurde, 
-            // oder ein leerer String "", wenn alles gelöscht wurde.
-            // Der PersistenceService muss damit umgehen können.
             $persistenceService->finalize($album, $mediaIdsString);
         }
     }
+
 
     /**
      * Baut die Dashboard-Config für den Fall eines Validation-Errors (oder Initial)
@@ -62,43 +62,42 @@ trait MediaRequestTrait
         object $entity,
         MediaDashboardConfig $configService,
         EntityManagerInterface $em,
-        array $customOptions = [] // <--- NEU: Ermöglicht Überschreiben von Optionen
+        array $customOptions = []
     ): array {
-
-        // 1. Basis-Optionen (Standard)
-        $defaultOptions = [
-            'autoSave' => false,
-            'context' => 'default',
-        ];
-
-        // 2. Deine Custom-Optionen mit den Defaults mergen
-        // Deine Optionen ($customOptions) gewinnen hier.
-        $options = array_merge($defaultOptions, $customOptions);
-
-        // --- STATE RECOVERY (Wiederherstellung bei Formular-Fehlern) ---
-        // POST-Daten haben die allerhöchste Priorität, damit der User-Input nicht verloren geht.
+        $options = array_merge(['autoSave' => false, 'context' => 'default'], $customOptions);
+        $inputPrefix = $options['mediaInputPrefix'] ?? null;
 
         if ($request->isMethod('POST')) {
-            $submittedAlbumId = $request->request->get('mediaAlbumId');
-            $submittedMediaIds = $request->request->get('mediaIds');
-            $submittedTempKey = $request->request->get('mediaTempKey');
-
-            // TempKey wiederherstellen
-            if ($submittedTempKey) {
-                $options['tempKey'] = $submittedTempKey;
+            $mediaData = [];
+            if ($inputPrefix) {
+                $parts = $this->parseInputPrefix($inputPrefix);
+                $rootData = $request->request->all($parts['root']);
+                $mediaData = $rootData[$parts['index']] ?? [];
+            } else {
+                $mediaData = [
+                    'albumId' => $request->request->get('mediaAlbumId'),
+                    'ids' => $request->request->get('mediaIds'),
+                    'tempKey' => $request->request->get('mediaTempKey'),
+                ];
             }
 
-            // Album wiederherstellen
-            if ($submittedAlbumId) {
-                $options['album'] = $em->getRepository(MediaAlbum::class)->find($submittedAlbumId);
-            }
-
-            // Sortierung wiederherstellen
-            if ($submittedMediaIds !== null) {
-                $options['mediaIds'] = $submittedMediaIds;
-            }
+            if (!empty($mediaData['tempKey'])) $options['tempKey'] = $mediaData['tempKey'];
+            if (!empty($mediaData['albumId'])) $options['album'] = $em->getRepository(MediaAlbum::class)->find($mediaData['albumId']);
+            if (isset($mediaData['ids'])) $options['mediaIds'] = $mediaData['ids'];
         }
 
         return $configService->build($entity, $options);
+    }
+
+    /**
+     * Hilfsmethode um "amenity_media[0]" in ['root' => 'amenity_media', 'index' => 0] zu zerlegen.
+     */
+    private function parseInputPrefix(string $prefix): array
+    {
+        preg_match('/^([^\[]+)\[([^\]]+)\]/', $prefix, $matches);
+        return [
+            'root' => $matches[1] ?? $prefix,
+            'index' => $matches[2] ?? null
+        ];
     }
 }
