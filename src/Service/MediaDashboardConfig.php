@@ -38,6 +38,7 @@ class MediaDashboardConfig
             'minHeight'     => 480,
             'allowedMimeTypes'  => ['image/jpeg', 'image/png', 'image/webp'],
             'autoSave'      => false,
+            'compact' => false,
             'title' => $this->translator->trans('dashboard.title', [], 'KmMedia'),
 
             'imageVariants' => [

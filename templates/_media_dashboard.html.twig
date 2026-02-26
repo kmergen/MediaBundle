@@ -17,35 +17,42 @@
      data-media-upload-translations-value="{{ options.translations|json_encode|e("html_attr") }}"
      data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
 
-       {% if options.title is defined and options.title %}<h2 class="kmm-dashboard-title">{{ options.title }}</h2>{% endif %}
+       <div class="{{ options.compact ? 'kmm-compact-wrapper' : '' }}">
 
-       <div data-media-upload-target="errorBox" class="kmm-error-box kmm-hidden"></div>
+              {# 1. PREVIEW LIST #}
+              <div data-media-upload-target="previewList"
+                   class="{{ options.compact ? 'kmm-preview-compact' : 'kmm-dashboard-preview-grid' }}"></div>
 
-       <div data-media-upload-target="previewList"
-            class="kmm-dashboard-preview-grid">{# JS füllt diesen Bereich basierend auf initial-images-value #}</div>
+              {# 2. TRIGGER / DROPZONE #}
+              <div data-media-upload-target="dropzone"
+                   data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop"
+                   class="{{ options.compact ? 'kmm-btn-upload-trigger' : 'kmm-dashboard-dropzone' }}"
+                   title="{{ options.compact ? 'button.upload_image'|trans({}, 'KmMedia') : '' }}">
 
-       {# 2. DROPZONE (Jetzt UNTEN, Volle Breite) #}
-       <div data-media-upload-target="dropzone"
-            data-action="click->media-upload#onDropzoneClick dragover->media-upload#onDragOver dragleave->media-upload#onDragLeave drop->media-upload#onDrop"
-            class="kmm-dashboard-dropzone">
-              <div class="kmm-dropzone-info">
-                     <svg class="kmm-dropzone-info-svg"
-                          fill="none"
-                          stroke="currentColor"
-                          viewbox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
-                            </path>
-                     </svg>
-                     <p class="kmm-dropzone-info-text">{{ 'dashboard.dropzone_help'|trans({}, 'KmMedia') }}</p>
+                     <div class="{{ options.compact ? '' : 'kmm-dropzone-info' }}">
+                            <svg class="{{ options.compact ? '' : 'kmm-dropzone-info-svg' }}"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewbox="0 0 24 24">
+                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                   </path>
+                            </svg>
+
+                            {# Text only appears in full dashboard mode #}
+                            {% if not options.compact %}
+                                   <span class="kmm-dropzone-info-text">{{ 'dashboard.dropzone_help'|trans({}, 'KmMedia') }}</span>
+                            {% endif %}
+                     </div>
+                     <input type="file"
+                            data-media-upload-target="input"
+                            data-action="change->media-upload#onFileChange"
+                            multiple
+                            accept="image/*"
+                            class="hidden">
               </div>
-              <input type="file"
-                     data-media-upload-target="input"
-                     data-action="change->media-upload#onFileChange"
-                     multiple
-                     accept="image/*"
-                     class="hidden">
-       </div>
 
+              <div data-media-upload-target="errorBox" class="kmm-error-box kmm-hidden"></div>
+       </div>
        {# 3. Media_ids) #}
        <input type="hidden"
               data-media-upload-target="mediaIds"

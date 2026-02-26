@@ -7,20 +7,30 @@
 */
 :root {
     /* Farben */
-    --kmm-primary: #4f46e5;        /* Indigo 600 */
-    --kmm-primary-hover: #4338ca;  /* Indigo 700 */
-    --kmm-danger: #dc2626;         /* Red 600 */
-    --kmm-danger-hover: #b91c1c;   /* Red 700 */
-    
-    --kmm-bg-light: #f9fafb;       /* Gray 50 */
-    --kmm-border-color: #e5e7eb;   /* Gray 200 */
-    --kmm-text-color: #374151;     /* Gray 700 */
-    --kmm-text-muted: #6b7280;     /* Gray 500 */
-    
+    --kmm-primary: #4f46e5;
+    /* Indigo 600 */
+    --kmm-primary-hover: #4338ca;
+    /* Indigo 700 */
+    --kmm-danger: #dc2626;
+    /* Red 600 */
+    --kmm-danger-hover: #b91c1c;
+    /* Red 700 */
+
+    --kmm-bg-light: #f9fafb;
+    /* Gray 50 */
+    --kmm-border-color: #e5e7eb;
+    /* Gray 200 */
+    --kmm-text-color: #374151;
+    /* Gray 700 */
+    --kmm-text-muted: #6b7280;
+    /* Gray 500 */
+
     /* Maße & Rahmen */
-    --kmm-radius: 0.5rem;          /* 8px */
+    --kmm-radius: 0.5rem;
+    /* 8px */
     --kmm-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --kmm-focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.3); /* Ring bei Fokus */
+    --kmm-focus-ring: 0 0 0 3px rgba(79, 70, 229, 0.3);
+    /* Ring bei Fokus */
 }
 
 /* 
@@ -28,16 +38,36 @@
 */
 .kmm-dashboard-preview-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Mobile: 2 Spalten */
+    grid-template-columns: repeat(2, 1fr);
+    /* Mobile: 2 Spalten */
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
 /* Responsive Breakpoints (Vanilla Media Queries) */
-@media (min-width: 640px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 768px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(4, 1fr); } }
-@media (min-width: 1024px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(5, 1fr); } }
-@media (min-width: 1280px) { .kmm-dashboard-preview-grid { grid-template-columns: repeat(6, 1fr); } }
+@media (min-width: 640px) {
+    .kmm-dashboard-preview-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .kmm-dashboard-preview-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .kmm-dashboard-preview-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .kmm-dashboard-preview-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
 
 
 /* 
@@ -57,26 +87,30 @@
 */
 .kmm-dashboard-dropzone {
     width: 100%;
-    border: 2px dashed #d1d5db; /* Gray 300 */
+    border: 2px dashed #d1d5db;
+    /* Gray 300 */
     border-radius: var(--kmm-radius);
     padding: 2.5rem;
     text-align: center;
     cursor: pointer;
     background-color: white;
     transition: background-color 0.2s, border-color 0.2s;
-    box-sizing: border-box; /* Wichtig für Padding */
+    box-sizing: border-box;
+    /* Wichtig für Padding */
 }
 
 .kmm-dashboard-dropzone:hover,
 .kmm-dashboard-dropzone.kmm-drag-over {
     background-color: var(--kmm-bg-light);
-    border-color: #60a5fa; /* Blue 400 */
+    border-color: #60a5fa;
+    /* Blue 400 */
 }
 
 /* HIER AUCH: Das SVG soll blau werden */
 .kmm-dashboard-dropzone:hover .kmm-dropzone-info-svg,
 .kmm-dashboard-dropzone.kmm-drag-over .kmm-dropzone-info-svg {
-    color: #3b82f6; /* Blue 500 */
+    color: #3b82f6;
+    /* Blue 500 */
 }
 
 /* HIER AUCH: Der Text soll dunkel werden */
@@ -96,12 +130,14 @@
 .kmm-dropzone-info-svg {
     width: 2.5rem;
     height: 2.5rem;
-    color: #9ca3af; /* Gray 400 */
+    color: #9ca3af;
+    /* Gray 400 */
     transition: color 0.2s;
 }
 
 .kmm-dropzone-info-text {
-    font-size: 0.875rem; /* 14px */
+    font-size: 0.875rem;
+    /* 14px */
     color: var(--kmm-text-muted);
     font-weight: 500;
     margin: 0;
@@ -112,14 +148,16 @@
 */
 .kmm-photo-item {
     position: relative;
-    width: 9rem;  /* 36 * 0.25rem = 9rem */
+    width: 9rem;
+    /* 36 * 0.25rem = 9rem */
     height: 9rem;
     overflow: hidden;
     border-radius: var(--kmm-radius);
     border: 1px solid var(--kmm-border-color);
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     background-color: #f3f4f6;
-    cursor: move; /* Fallback für Sortable */
+    cursor: move;
+    /* Fallback für Sortable */
     user-select: none;
     display: flex;
     align-items: center;
@@ -128,7 +166,8 @@
 
 .kmm-preview-image {
     position: absolute;
-    inset: 0; /* top/right/bottom/left: 0 */
+    inset: 0;
+    /* top/right/bottom/left: 0 */
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -155,26 +194,41 @@
     background-color: white;
     box-shadow: var(--kmm-shadow);
     cursor: pointer;
-    opacity: 0; /* Standardmäßig versteckt */
+    opacity: 0;
+    /* Standardmäßig versteckt */
     transition: opacity 0.2s, background-color 0.2s;
     border: none;
     padding: 0;
 }
 
 /* Positionierung */
-.kmm-delete-btn { right: 0.25rem; color: var(--kmm-danger); }
-.kmm-edit-btn { right: 2rem; color: var(--kmm-primary); }
+.kmm-delete-btn {
+    right: 0.25rem;
+    color: var(--kmm-danger);
+}
+
+.kmm-edit-btn {
+    right: 2rem;
+    color: var(--kmm-primary);
+}
 
 /* Hover Verhalten für Buttons */
 .kmm-photo-item:hover .kmm-delete-btn,
 .kmm-photo-item:hover .kmm-edit-btn {
     opacity: 1;
 }
-.kmm-delete-btn:hover { background-color: #fef2f2; }
-.kmm-edit-btn:hover { background-color: #eff6ff; }
+
+.kmm-delete-btn:hover {
+    background-color: #fef2f2;
+}
+
+.kmm-edit-btn:hover {
+    background-color: #eff6ff;
+}
 
 /* SVG Icons in Buttons */
-.kmm-delete-btn svg, .kmm-edit-btn svg {
+.kmm-delete-btn svg,
+.kmm-edit-btn svg {
     width: 1rem;
     height: 1rem;
 }
@@ -187,7 +241,16 @@
     color: #3b82f6;
     z-index: 0;
 }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
 
 
 /* 
@@ -219,7 +282,8 @@
     border-radius: var(--kmm-radius);
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
     width: 100%;
-    max-width: 32rem; /* ca 512px */
+    max-width: 32rem;
+    /* ca 512px */
     margin: 0 1rem;
     overflow: hidden;
     z-index: 10;
@@ -248,7 +312,10 @@
     border: none;
     cursor: pointer;
 }
-.kmm-modal-close:hover { color: #4b5563; }
+
+.kmm-modal-close:hover {
+    color: #4b5563;
+}
 
 .kmm-modal-body {
     padding: 1rem;
@@ -296,7 +363,8 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    box-sizing: border-box; /* Wichtig! */
+    box-sizing: border-box;
+    /* Wichtig! */
 }
 
 .kmm-form-input:focus {
@@ -335,7 +403,10 @@
     border: 1px solid #d1d5db;
     color: var(--kmm-text-color);
 }
-.kmm-btn-cancel:hover { background-color: var(--kmm-bg-light); }
+
+.kmm-btn-cancel:hover {
+    background-color: var(--kmm-bg-light);
+}
 
 .kmm-btn-save {
     background-color: var(--kmm-primary);
@@ -343,11 +414,17 @@
     border: 1px solid transparent;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 }
-.kmm-btn-save:hover { background-color: var(--kmm-primary-hover); }
-.kmm-btn-save:disabled { opacity: 0.7; cursor: not-allowed;
- }
 
- /* Der "Ring" um das erste Bild */
+.kmm-btn-save:hover {
+    background-color: var(--kmm-primary-hover);
+}
+
+.kmm-btn-save:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Der "Ring" um das erste Bild */
 .kmm-main-image-border {
     /* 
        Tailwind: ring-4 ring-blue-600 ring-offset-2 
@@ -356,9 +433,9 @@
        2. Shadow: Eigentlicher Ring in Primärfarbe
     */
     box-shadow: 0 0 0 2px white, 0 0 0 6px var(--kmm-primary);
-    
+
     /* Optional: Damit der Ring nicht abgeschnitten wird, falls container overflow hidden hat */
-    z-index: 20; 
+    z-index: 20;
 }
 
 /* Das "Hauptbild" Label/Badge */
@@ -366,24 +443,30 @@
     position: absolute;
     bottom: 0.5rem;
     left: 50%;
-    transform: translateX(-50%); /* Zentrieren */
-    
-    background-color: var(--kmm-primary); /* oder rgba(79, 70, 229, 0.9) für Transparenz */
+    transform: translateX(-50%);
+    /* Zentrieren */
+
+    background-color: var(--kmm-primary);
+    /* oder rgba(79, 70, 229, 0.9) für Transparenz */
     color: white;
-    
-    font-size: 0.625rem; /* ca 10px */
+
+    font-size: 0.625rem;
+    /* ca 10px */
     font-weight: 700;
     text-transform: uppercase;
     white-space: nowrap;
-    
+
     padding: 0.25rem 0.75rem;
-    border-radius: 9999px; /* Full rounded */
-    
+    border-radius: 9999px;
+    /* Full rounded */
+
     z-index: 20;
-    pointer-events: none; /* Klicks gehen durch das Badge durch auf das Bild */
-    
+    pointer-events: none;
+    /* Klicks gehen durch das Badge durch auf das Bild */
+
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    backdrop-filter: blur(4px); /* Blur-Effekt falls gewünscht */
+    backdrop-filter: blur(4px);
+    /* Blur-Effekt falls gewünscht */
 }
 
 /* media.css */
@@ -405,6 +488,69 @@
 }
 
 @keyframes kmm-fade-in {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 
+   7. COMPACT LAYOUT 
+*/
+.kmm-compact-wrapper {
+    display: flex;
+    align-items: center;
+    /* Vertikal zentriert */
+    gap: 1rem;
+    flex-wrap: wrap;
+    /* Falls Platzmangel */
+}
+
+/* Thumbnail size in compact mode */
+.kmm-compact-wrapper .kmm-photo-item {
+    width: 4.5rem;
+    /* Etwas kleiner für Listen */
+    height: 4.5rem;
+}
+
+/* Button-Style Trigger (Icon Only in Compact Mode) */
+.kmm-btn-upload-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    /* Square button */
+    height: 3rem;
+    background-color: #f8fafc;
+    border: 1px solid var(--kmm-border-color);
+    border-radius: var(--kmm-radius);
+    color: var(--kmm-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--kmm-shadow);
+    flex-shrink: 0;
+    /* Don't squash the button */
+}
+
+.kmm-btn-upload-trigger:hover {
+    background-color: var(--kmm-bg-light);
+    border-color: var(--kmm-primary-hover);
+    transform: translateY(-1px);
+}
+
+.kmm-btn-upload-trigger svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Ensure the compact wrapper handles the icon button well */
+.kmm-compact-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }

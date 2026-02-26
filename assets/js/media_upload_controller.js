@@ -111,9 +111,25 @@ export default class extends Controller {
 
   // --- Events ---
 
-  onDropzoneClick() {
+  onDropzoneClick(e) {
+    // Check if the max files limit is already reached
+    const currentCount =
+      this.previewListTarget.querySelectorAll(".kmm-photo-item").length;
+
+    if (this.maxFilesValue > 0 && currentCount >= this.maxFilesValue) {
+      const t = this.translationsValue || {};
+      const errorMsg =
+        t.errorMaxFiles || `Maximal ${this.maxFilesValue} Bilder erlaubt.`;
+
+      this.showError(errorMsg);
+
+      // Stop here so the file chooser window never opens
+      return;
+    }
+
     this.inputTarget.click();
   }
+  
   onFileChange(e) {
     this.handleFiles(e.target.files);
   }
@@ -374,6 +390,15 @@ export default class extends Controller {
       }
     });
 
+    const currentCount = items.length;
+    if (this.maxFilesValue > 0 && currentCount >= this.maxFilesValue) {
+      this.dropzoneTarget.style.opacity = "0.5";
+      this.dropzoneTarget.style.cursor = "not-allowed";
+    } else {
+      this.dropzoneTarget.style.opacity = "1";
+      this.dropzoneTarget.style.cursor = "pointer";
+    }
+
     if (this.hasMediaIdsTarget) this.mediaIdsTarget.value = ids.join(",");
   }
 
@@ -382,7 +407,9 @@ export default class extends Controller {
     if (!badgeContainer) return;
     badgeContainer.innerHTML = "";
 
-    if (isMain) {
+    // NEW: Only apply "Main Image" logic if more than one file is allowed
+    // If maxFiles is 1, we don't need a badge or a special border.
+    if (isMain && this.maxFilesValue !== 1) {
       item.classList.add("kmm-main-image-border");
       const badge = document.createElement("div");
       badge.className = "kmm-main-image-badge";
