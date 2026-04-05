@@ -6,23 +6,44 @@ namespace Kmergen\MediaBundle\Service;
 use Kmergen\MediaBundle\Entity\MediaAlbum;
 use Kmergen\MediaBundle\Contract\MediaAlbumOwnerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
 class MediaDashboardConfig
 {
     public function __construct(
         private readonly ImageService $imageService,
-        private readonly TranslatorInterface $translator
+        private readonly TranslatorInterface $translator,
+        private readonly EntityManagerInterface $em // --- ADDED ---
     ) {}
 
     public function build(object $entity, array $options = []): array
     {
         $context = $options['context'] ?? 'default';
+        $autoSave = $options['autoSave'] ?? false;
         $album = null;
 
         if (isset($options['album'])) {
             $album = $options['album'];
         } elseif ($entity instanceof MediaAlbumOwnerInterface) {
             $album = $entity->getMediaAlbum($context);
+            /**
+             * --- NEW: Pre-create album if in autoSave mode ---
+             * We proactively create and link the album here instead of in the UploadService because:
+             * 1. Access to the full $entity object allows direct linking via setMediaAlbum().
+             * 2. Prevents race conditions where parallel AJAX uploads might create multiple albums.
+             * 3. Ensures the frontend Stimulus controller always has a valid albumId from the start.
+             */
+             if (!$album && $autoSave) {
+                $album = new MediaAlbum();
+                $this->em->persist($album);
+
+                if (method_exists($entity, 'setMediaAlbum')) {
+                    $entity->setMediaAlbum($album);
+                }
+                
+                // Flush immediately so we have an ID for the dashboard
+                $this->em->flush();
+            }
         }
 
         $sortedMediaIds = null;
