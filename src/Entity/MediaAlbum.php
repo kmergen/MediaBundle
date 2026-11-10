@@ -36,7 +36,7 @@ class MediaAlbum
      * @var Collection<int, Media>
      */
     #[ORM\OneToMany(targetEntity: Media::class, mappedBy: 'album', cascade: ['persist', 'remove'])]
-    #[ORM\OrderBy(['position' => 'ASC'])]
+    #[ORM\OrderBy(['position' => \SortDirection::Ascending])]
     private Collection $media;
 
     public function __construct()
