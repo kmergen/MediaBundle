@@ -21,6 +21,21 @@ class ImageVariantImagick
     }
 
     $imagick = new Imagick($imgRef);
+    $originalWidth = $imagick->getImageWidth();
+    $originalHeight = $imagick->getImageHeight();
+
+    // Never upscale: an original that is already smaller than the requested size is kept as it is.
+    if ($bestfit || $w === 0) {
+      // Best fit, or only a height: the aspect ratio is kept, so the original fits when it is not
+      // larger in any requested dimension.
+      if (($w === 0 || $originalWidth <= $w) && ($h === 0 || $originalHeight <= $h)) {
+        return $imagick;
+      }
+    } else {
+      // An exact box: shrink it, keeping its proportions, until it fits inside the original.
+      [$w, $h] = VariantSize::limitToOriginal($w, $h, $originalWidth, $originalHeight);
+    }
+
     $imagick->resizeImage($w, $h, Imagick::FILTER_LANCZOS, 1, $bestfit);
     return $imagick;
   }
@@ -33,6 +48,9 @@ class ImageVariantImagick
     // If BOTH are missing, fallback to original dimensions
     $w = $width ?? $height ?? $imagick->getImageWidth();
     $h = $height ?? $width ?? $imagick->getImageHeight();
+
+    // Never upscale: keep the requested proportions, but at most the size the original allows.
+    [$w, $h] = VariantSize::limitToOriginal($w, $h, $imagick->getImageWidth(), $imagick->getImageHeight());
 
     $imagick->cropThumbnailImage($w, $h);
     return $imagick;
