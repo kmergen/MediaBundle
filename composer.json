@@ -11,6 +11,7 @@
     ],
     "require": {
         "php": ">=8.4",
+        "ext-imagick": "*",
         "doctrine/orm": "^3.0",
         "symfony/form": "^7.4 || ^8.0",
         "symfony/framework-bundle": "^7.4 || ^8.0",

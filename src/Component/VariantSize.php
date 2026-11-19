@@ -5,7 +5,7 @@
 namespace Kmergen\MediaBundle\Component;
 
 /**
- * Size rules shared by the Imagick and GD variant generators.
+ * Size rules for the image variant generator (ImageVariantImagick).
  */
 final class VariantSize
 {

@@ -12,8 +12,8 @@ It currently handles:
 
 ## Install
 
-MediaBundle requires php 8.2 or higher and Symfony 7 or higher. Run the following command to install it in your
-application.
+MediaBundle requires PHP 8.4 or higher, Symfony 7.4 or higher and the PHP extension Imagick (`ext-imagick`), which
+generates all image variants. Run the following command to install it in your application.
 
 ```bash
 composer require kmergen/media-bundle
