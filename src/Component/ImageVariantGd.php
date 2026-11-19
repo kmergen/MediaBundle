@@ -45,6 +45,14 @@ class ImageVariantGd
       $h = $height;
     }
 
+    // Never upscale, independent of the Imagine version: an original that already fits the box is kept
+    // at its own size, and a fill box is shrunk, keeping its proportions, until it fits the original.
+    if ($mode === 'outbound') {
+      [$w, $h] = VariantSize::limitToOriginal($w, $h, $origWidth, $origHeight);
+    } elseif ($w >= $origWidth && $h >= $origHeight) {
+      return $image;
+    }
+
     $box = new Box($w, $h);
 
     if ($mode === 'outbound') {
@@ -70,6 +78,9 @@ class ImageVariantGd
     // If one dimension is missing, default to making it a perfect square
     $w = $width ?? $height ?? $size->getWidth();
     $h = $height ?? $width ?? $size->getHeight();
+
+    // Never upscale: keep the requested proportions, but at most the size the original allows.
+    [$w, $h] = VariantSize::limitToOriginal($w, $h, $size->getWidth(), $size->getHeight());
 
     $box = new Box($w, $h);
 
