@@ -77,6 +77,9 @@ export default class extends Controller {
   // --- UI Helpers ---
 
   initSortable() {
+    // A second connect must not attach a second Sortable (it would save the order twice).
+    if (Sortable.get(this.previewListTarget)) return;
+
     new Sortable(this.previewListTarget, {
       animation: 150,
       ghostClass: "opacity-50",
@@ -89,8 +92,15 @@ export default class extends Controller {
   }
 
   renderInitialImages() {
-    if (this.initialImagesValue.length > 0) {
-      this.initialImagesValue.forEach((image) => this.addImageToDOM(image));
+    // Idempotent: a second connect (e.g. two Stimulus apps on the same page, or a reconnect after a
+    // Turbo cache restore) must not render the same photo again. Photos already in the list are skipped.
+    const rendered = new Set(
+      Array.from(this.previewListTarget.querySelectorAll(".kmm-photo-item"), (item) => item.dataset.mediaId)
+    );
+    const missing = this.initialImagesValue.filter((image) => !rendered.has(String(image.id)));
+
+    if (missing.length > 0) {
+      missing.forEach((image) => this.addImageToDOM(image));
       this.updateState();
     }
   }
