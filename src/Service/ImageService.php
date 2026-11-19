@@ -5,8 +5,6 @@
 namespace Kmergen\MediaBundle\Service;
 
 use Imagick;
-use Imagine\Image\ImageInterface;
-use Kmergen\MediaBundle\Component\ImageVariantGd;
 use Kmergen\MediaBundle\Component\ImageVariantImagick;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -43,10 +41,8 @@ readonly class ImageService
       return $variantPath;
     }
 
-    // Determine whether to use Imagick or GD
-    $image = extension_loaded('imagick')
-      ? $this->processWithImagick($action, $imgRef, $width, $height, $options)
-      : $this->processWithGd($action, $imgRef, $width, $height, $options);
+    // Imagick is required (ext-imagick in composer.json).
+    $image = $this->processWithImagick($action, $imgRef, $width, $height, $options);
 
     // Save the image
     return $this->saveImage($image, $variantPath, $quality);
@@ -67,33 +63,12 @@ readonly class ImageService
     };
   }
 
-  private function processWithGd(string $action, string $imgRef, ?int $width, ?int $height, array $options = []): ImageInterface
-  {
-    return match ($action) {
-      'resize' => ImageVariantGd::resize($imgRef, $width, $height),
-      'crop' => ImageVariantGd::crop($imgRef, $width, $height),
-      'compositeBlur' => ImageVariantGd::compositeBlur(
-        $imgRef,
-        $width,
-        $height,
-        $options['blur_radius'] ?? 5
-      ),
-      default => throw new \InvalidArgumentException("Unknown variant action: $action"),
-    };
-  }
-
-  private function saveImage(object $image, string $path, int $quality): string
+  private function saveImage(Imagick $image, string $path, int $quality): string
   {
     $this->filesystem->mkdir(dirname($path));
 
-    if ($image instanceof ImageInterface) {
-      $image->save($path, ['quality' => $quality]);
-    } elseif ($image instanceof Imagick) {
-      $image->setImageCompressionQuality($quality);
-      $image->writeImage($path);
-    } else {
-      throw new \InvalidArgumentException("Unsupported image type.");
-    }
+    $image->setImageCompressionQuality($quality);
+    $image->writeImage($path);
 
     return $path;
   }
