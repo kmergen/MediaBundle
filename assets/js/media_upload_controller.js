@@ -281,7 +281,10 @@ export default class extends Controller {
 
         const response = await fetch(this.uploadUrl, {
           method: "POST",
-          headers: { "X-Requested-With": "XMLHttpRequest" },
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRF-TOKEN": this.csrfValue,
+          },
           body: formData,
         });
 
@@ -364,6 +367,7 @@ export default class extends Controller {
         headers: {
           "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
+          "X-CSRF-TOKEN": this.csrfValue,
         },
         body: JSON.stringify({ ids: ids }),
       });
