@@ -6,16 +6,30 @@ namespace Kmergen\MediaBundle\Service;
 
 use Imagick;
 use Kmergen\MediaBundle\Component\ImageVariantImagick;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 
 readonly class ImageService
 {
-  public function __construct(private Filesystem $filesystem) {}
+  private string $publicDir;
+
+  public function __construct(
+    private Filesystem $filesystem,
+    private LoggerInterface $logger,
+    #[Autowire('%kernel.project_dir%')]
+    string $projectDir,
+  ) {
+    $this->publicDir = Path::join($projectDir, 'public');
+  }
 
   /**
    * Generates a thumbnail for the given image reference.
    *
-   * @param string $imgRef   The path to the original image file.
+   * @param string $imgRef   The path of the original image relative to the public directory
+   *                         (e.g. "uploads/10/456/photo.jpg", a leading slash is allowed).
    * @param string $action   The action to perform (e.g., 'resize', 'crop').
    * @param int|null $width  The target width (null for auto-calculation).
    * @param int|null $height The target height (null for auto-calculation).
@@ -23,7 +37,12 @@ readonly class ImageService
    * @param bool $force      Whether to force regeneration of the thumbnail.
    * @param mixed ...$options Any future extra parameters (e.g., blur_radius: 5).
    *
-   * @return string The path to the generated thumbnail.
+   * @return string The path of the thumbnail relative to the public directory, in the same form as
+   *                $imgRef. If the original is missing or cannot be processed, $imgRef is returned
+   *                and a warning is logged, so a single broken image cannot take down a whole page.
+   *
+   * Files are resolved against the public directory, not the current working directory, which
+   * differs between web servers (PHP-FPM, CGI, the built-in server) and the console.
    */
   public function thumb(
     string $imgRef,
@@ -35,17 +54,52 @@ readonly class ImageService
     mixed ...$options
   ): string {
     $variantDir = $this->generateVariantDirectory($imgRef, $action, $width, $height, $quality, $options);
-    $variantPath = $variantDir . DIRECTORY_SEPARATOR . basename($imgRef);
+    $variantPath = $variantDir . '/' . basename($imgRef);
 
-    if (!$force && $this->filesystem->exists($variantPath)) {
+    $absoluteOriginal = $this->absolutePath($imgRef);
+    $absoluteVariant = $this->absolutePath($variantPath);
+
+    if (null === $absoluteOriginal || null === $absoluteVariant) {
+      $this->logger->warning('Thumbnail of "{path}" refused: the path leaves the public directory.', ['path' => $imgRef]);
+
+      return $imgRef;
+    }
+
+    if (!$force && $this->filesystem->exists($absoluteVariant)) {
       return $variantPath;
     }
 
-    // Imagick is required (ext-imagick in composer.json).
-    $image = $this->processWithImagick($action, $imgRef, $width, $height, $options);
+    if (!is_file($absoluteOriginal)) {
+      $this->logger->warning('Thumbnail of "{path}" not generated: the original file is missing.', ['path' => $imgRef]);
 
-    // Save the image
-    return $this->saveImage($image, $variantPath, $quality);
+      return $imgRef;
+    }
+
+    try {
+      // Imagick is required (ext-imagick in composer.json).
+      $image = $this->processWithImagick($action, $absoluteOriginal, $width, $height, $options);
+      $this->saveImage($image, $absoluteVariant, $quality);
+    } catch (\ImagickException|IOExceptionInterface $exception) {
+      $this->logger->warning('Thumbnail of "{path}" not generated: {message}', [
+        'path' => $imgRef,
+        'message' => $exception->getMessage(),
+        'exception' => $exception,
+      ]);
+
+      return $imgRef;
+    }
+
+    return $variantPath;
+  }
+
+  /**
+   * Absolute path below the public directory, or null if the path would leave it.
+   */
+  private function absolutePath(string $relativePath): ?string
+  {
+    $absolute = Path::join($this->publicDir, ltrim($relativePath, '/'));
+
+    return Path::isBasePath($this->publicDir, $absolute) ? $absolute : null;
   }
 
   private function processWithImagick(string $action, string $imgRef, ?int $width, ?int $height, array $options = []): Imagick
@@ -63,14 +117,12 @@ readonly class ImageService
     };
   }
 
-  private function saveImage(Imagick $image, string $path, int $quality): string
+  private function saveImage(Imagick $image, string $path, int $quality): void
   {
     $this->filesystem->mkdir(dirname($path));
 
     $image->setImageCompressionQuality($quality);
     $image->writeImage($path);
-
-    return $path;
   }
 
   /**
