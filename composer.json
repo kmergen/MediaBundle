@@ -13,8 +13,12 @@
         "php": ">=8.4",
         "ext-imagick": "*",
         "doctrine/orm": "^3.0",
+        "symfony/filesystem": "^7.4 || ^8.0",
         "symfony/form": "^7.4 || ^8.0",
         "symfony/framework-bundle": "^7.4 || ^8.0",
+        "symfony/security-bundle": "^7.4 || ^8.0",
+        "symfony/security-csrf": "^7.4 || ^8.0",
+        "symfony/string": "^7.4 || ^8.0",
         "symfony/translation": "^7.4 || ^8.0"
     },
     "autoload": {

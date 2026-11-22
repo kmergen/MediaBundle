@@ -15,7 +15,7 @@
      data-media-upload-image-variants-value="{{ options.imageVariants|json_encode|e("html_attr") }}"
      data-media-upload-editable-alt-text-locales-value="{{ options.editableAltTextLocales ? options.editableAltTextLocales|join(",") : '' }}"
      data-media-upload-translations-value="{{ options.translations|json_encode|e("html_attr") }}"
-     data-media-upload-csrf-value="{{ csrf_token("media_delete") }}">
+     data-media-upload-csrf-value="{{ csrf_token("kmergen_media") }}">
 
        <div class="{{ options.compact ? 'kmm-compact-wrapper' : '' }}">
 

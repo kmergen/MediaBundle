@@ -1,61 +1,63 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Kmergen\MediaBundle\Controller;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Exception;
 use Kmergen\MediaBundle\Entity\Media;
+use Kmergen\MediaBundle\Exception\InvalidMediaUploadException;
+use Kmergen\MediaBundle\Security\MediaAlbumVoter;
 use Kmergen\MediaBundle\Form\MediaEditType;
-use Kmergen\MediaBundle\Repository\MediaRepository;
 use Kmergen\MediaBundle\Service\ImageService;
 use Kmergen\MediaBundle\Service\ImageUploadService;
 use Kmergen\MediaBundle\Service\MediaDeleteService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
+/**
+ * Endpoints of the media dashboard. Every route requires a login and asks MediaAlbumVoter::MANAGE
+ * for the affected album; upload, reorder and delete also require the CSRF token CSRF_TOKEN_ID
+ * in the X-CSRF-TOKEN header (the dashboard template renders it).
+ */
 class MediaController extends AbstractController
 {
-    private string $publicDir;
+    public const string CSRF_TOKEN_ID = 'kmergen_media';
 
-    public function __construct(private readonly KernelInterface $kernel, private readonly ParameterBagInterface $params)
-    {
-        $this->publicDir = $kernel->getProjectDir() . '/public';
-    }
+    private const array VARIANT_ACTIONS = ['resize', 'crop', 'compositeBlur'];
+    private const int MAX_VARIANTS = 5;
+    private const int MAX_VARIANT_EDGE = 4000;
+    private const int MAX_REORDER_IDS = 500;
 
-    #[Route('/media/upload', name: 'kmergen_media_upload', methods: ['POST', 'GET'])]
+    #[Route('/media/upload', name: 'kmergen_media_upload', methods: ['POST'])]
     public function upload(
         Request $request,
         ImageUploadService $imageUploadService,
         ImageService $imageService
     ): Response {
-        // Handle the file upload and save the media
-        $media = $imageUploadService->upload($request);
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
+        $this->denyUnlessCsrfHeaderValid($request);
 
-        // Parse the JSON string sent from JavaScript
-        $imageVariantsJson = $request->request->get('imageVariants');
-        $imageVariants = [];
+        try {
+            $album = $imageUploadService->findRequestedAlbum($request);
+            $this->denyAccessUnlessGranted(MediaAlbumVoter::MANAGE, $album);
 
-        if (is_string($imageVariantsJson)) {
-            $decoded = json_decode($imageVariantsJson, true);
-            if (is_array($decoded)) {
-                $imageVariants = $decoded;
-            }
+            // Validate the variants before anything is stored
+            $imageVariants = $this->parseImageVariants($request->request->get('imageVariants'));
+
+            $media = $imageUploadService->upload($request, $album);
+        } catch (InvalidMediaUploadException $e) {
+            return $this->json(['status' => 'error', 'message' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
         }
 
         $previewUrl = null;
 
         // Loop through the purely structured arrays
         foreach ($imageVariants as $variant) {
-            if (!is_array($variant)) {
-                continue; // Safety check
-            }
-
             // Extract core arguments with smart defaults
             $action  = $variant['action'] ?? 'resize';
             $width   = !empty($variant['width']) ? (int)$variant['width'] : null;
@@ -101,22 +103,48 @@ class MediaController extends AbstractController
     #[Route('/media/reorder', name: 'kmergen_media_reorder', methods: ['POST'])]
     public function reorder(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $ids = $data['ids'] ?? [];
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
+        $this->denyUnlessCsrfHeaderValid($request);
 
-        if (empty($ids)) {
-            return $this->json(['status' => 'ok']); // Nichts zu tun
+        $data = json_decode($request->getContent(), true);
+        $ids = \is_array($data) ? ($data['ids'] ?? []) : null;
+
+        if (!\is_array($ids) || \count($ids) > self::MAX_REORDER_IDS) {
+            throw new BadRequestHttpException('Invalid media ids.');
         }
 
-        $repo = $em->getRepository(Media::class);
+        if ([] === $ids) {
+            return $this->json(['status' => 'ok']); // nothing to do
+        }
 
-        // Performance-Tipp: Iteriere über die IDs und update nur die Position
-        foreach ($ids as $index => $id) {
-            $media = $repo->find($id);
-            if ($media) {
-                // Position ist Index
-                $media->setPosition($index);
+        $ids = array_values($ids);
+        foreach ($ids as $id) {
+            if (!\is_int($id) && !(\is_string($id) && ctype_digit($id))) {
+                throw new BadRequestHttpException('Invalid media id.');
             }
+        }
+
+        $mediaById = [];
+        foreach ($em->getRepository(Media::class)->findBy(['id' => $ids]) as $media) {
+            $mediaById[$media->getId()] = $media;
+        }
+
+        // All media must exist and belong to one album that the user may manage
+        $albums = [];
+        foreach ($ids as $id) {
+            $media = $mediaById[(int) $id] ?? throw $this->createNotFoundException('Unknown media.');
+            $album = $media->getAlbum() ?? throw $this->createAccessDeniedException('Media without album.');
+            $albums[$album->getId()] = $album;
+        }
+
+        if (1 !== \count($albums)) {
+            throw new BadRequestHttpException('Media from different albums.');
+        }
+
+        $this->denyAccessUnlessGranted(MediaAlbumVoter::MANAGE, reset($albums));
+
+        foreach ($ids as $index => $id) {
+            $mediaById[(int) $id]->setPosition($index);
         }
 
         $em->flush();
@@ -131,15 +159,10 @@ class MediaController extends AbstractController
         Request $request,
         MediaDeleteService $mediaDeleteService,
     ): Response {
-        // CSRF Check
-        // 1. Token aus dem Header holen
-        $token = $request->headers->get('X-CSRF-TOKEN');
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
+        $this->denyUnlessCsrfHeaderValid($request);
+        $this->denyAccessUnlessGranted(MediaAlbumVoter::MANAGE, $media->getAlbum());
 
-        // 2. Prüfen gegen den generischen Namen 'media_delete' (muss mit Twig übereinstimmen)
-        if (!$this->isCsrfTokenValid('media_delete', $token)) {
-            return $this->json(['status' => 'error', 'message' => 'Invalid CSRF token'], 419);
-        }
-        // Löschen
         try {
             $mediaDeleteService->deleteMedia($media);
         } catch (\Exception $e) {
@@ -156,6 +179,9 @@ class MediaController extends AbstractController
         EntityManagerInterface $em,
         ImageService $imageService
     ): Response {
+        // The form itself is protected by the regular form CSRF token
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
+        $this->denyAccessUnlessGranted(MediaAlbumVoter::MANAGE, $media->getAlbum());
 
         // 1. Locales auslesen
         $localesParam = $request->query->get('locales');
@@ -198,7 +224,7 @@ class MediaController extends AbstractController
         // Fallback auf Original-URL, falls Thumb-Generierung fehlschlägt
         $previewUrl = $media->getUrl();
         try {
-            $thumbUrl = $imageService->thumb($media->getUrl(), 'resize_800x600', true);
+            $thumbUrl = $imageService->thumb($media->getUrl(), 'resize', 800, 600);
             if ($thumbUrl) {
                 $previewUrl = $thumbUrl;
             }
@@ -221,6 +247,59 @@ class MediaController extends AbstractController
             // WICHTIG: Locales an Template übergeben für die Schleife
             'locales' => $editableLocales
         ], $response);
+    }
+
+    private function denyUnlessCsrfHeaderValid(Request $request): void
+    {
+        if (!$this->isCsrfTokenValid(self::CSRF_TOKEN_ID, (string) $request->headers->get('X-CSRF-TOKEN'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+    }
+
+    /**
+     * Parses the JSON list of image variants sent by the dashboard and rejects anything that is
+     * not a known action with sane dimensions.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function parseImageVariants(mixed $json): array
+    {
+        if (null === $json || '' === $json) {
+            return [];
+        }
+
+        $variants = \is_string($json) ? json_decode($json, true) : null;
+        if (!\is_array($variants) || !array_is_list($variants) || \count($variants) > self::MAX_VARIANTS) {
+            throw new InvalidMediaUploadException('Invalid image variants.');
+        }
+
+        foreach ($variants as $variant) {
+            if (!\is_array($variant) || !\in_array($variant['action'] ?? 'resize', self::VARIANT_ACTIONS, true)) {
+                throw new InvalidMediaUploadException('Invalid image variant.');
+            }
+
+            foreach (['width', 'height'] as $edge) {
+                $value = $variant[$edge] ?? null;
+                if (null !== $value && (!\is_int($value) || $value < 1 || $value > self::MAX_VARIANT_EDGE)) {
+                    throw new InvalidMediaUploadException('Invalid image variant size.');
+                }
+            }
+
+            $quality = $variant['quality'] ?? 80;
+            if (!\is_int($quality) || $quality < 1 || $quality > 100) {
+                throw new InvalidMediaUploadException('Invalid image variant quality.');
+            }
+
+            foreach ($variant as $key => $value) {
+                // Extra options are passed to ImageService::thumb() as named arguments
+                if (!\is_string($key) || 1 !== preg_match('/^[a-z][a-z0-9_]{0,31}$/i', $key)
+                    || \in_array($key, ['imgRef', 'force'], true) || !\is_scalar($value)) {
+                    throw new InvalidMediaUploadException('Invalid image variant option.');
+                }
+            }
+        }
+
+        return $variants;
     }
 
     //  #[Route('/media/{id}/edit', name: 'kmergen_media_edit', methods: ['POST'])]
