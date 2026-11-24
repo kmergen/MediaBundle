@@ -46,7 +46,7 @@ class CleanupTempMediaCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $hours = (int) $input->getOption('hours');
-        $limitDate = new \DateTime(sprintf('-%d hours', $hours));
+        $limitDate = new \DateTimeImmutable(sprintf('-%d hours', $hours));
 
         $io->title("Starte Bereinigung (Temp-Files älter als $hours Stunden)...");
 

@@ -16,10 +16,10 @@ class MediaAlbum
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private ?\DateTimeInterface $createdAt = null;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private ?\DateTimeImmutable $createdAt = null;
 
-    public function getCreatedAt(): ?\DateTimeInterface
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -28,7 +28,7 @@ class MediaAlbum
     public function setCreatedAtValue(): void
     {
         if ($this->createdAt === null) {
-            $this->createdAt = new \DateTime();
+            $this->createdAt = new \DateTimeImmutable();
         }
     }
 
