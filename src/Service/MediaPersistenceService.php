@@ -55,7 +55,7 @@ class MediaPersistenceService
      */
     public function cleanupOrphanedMedia(int $retentionHours = 24): int
     {
-        $limitDate = new \DateTime(sprintf('-%d hours', $retentionHours));
+        $limitDate = new \DateTimeImmutable(sprintf('-%d hours', $retentionHours));
         $repo = $this->em->getRepository(Media::class);
 
         $orphanedMedia = $repo->createQueryBuilder('m')
